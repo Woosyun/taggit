@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Taggit</title>
+    <script type="module" src="/src/main.ts" defer></script>
+    <script type="module" src="/src/resize.ts" defer></script>
+    <script type="module" src="/src/editor.ts" defer></script>
+  </head>
+
+  <body>
+    <aside id="sidebar">
+        <form id="search-form">
+            <input id="search-input" type="text" />
+        </form>
+        <div id="tagbar"></div>
+        
+        <div id="item-container"></div>
+    </aside>
+
+    <div id="divider"></div>
+
+    <div id="note-container"></div>
+
+  </body>
+</html>

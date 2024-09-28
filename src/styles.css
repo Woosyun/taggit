@@ -1,0 +1,56 @@
+body {
+    display: flex;
+    height: 95vh;
+    width: 95vw;
+}
+#sidebar, #note-container {
+    flex-grow: 1;
+    padding: 10px;
+    overflow: auto;
+}
+#sidebar{
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    border: 2px solid #ccc;
+    padding: 0.25rem;
+}
+#tagbar {
+    display: flex;
+    overflow: auto;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+}
+.badge {
+    color: gray;
+    border-radius: 40%;
+}
+.badge:hover {
+    color: black;
+    cursor: pointer;
+}
+#sidebar form {
+    width: 100%;
+}
+#sidebar input {
+    width: 100%; /* Input field will take the full width of the form */
+    box-sizing: border-box; /* Ensures padding and borders are included in the width */
+}
+input {
+    border-radius: 8px;
+    border: 1px solid transparent;
+    font-size: 1em;
+    font-weight: 500;
+    font-family: inherit;
+    color: #0f0f0f;
+    background-color: #ffffff;
+    transition: border-color 0.25s;
+    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
+    outline: none;
+}
+#divider {
+    width: 1px;
+    cursor: col-resize;
+    background-color: #ccc;
+    position: relative;
+}
