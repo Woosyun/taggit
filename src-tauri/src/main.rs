@@ -7,13 +7,13 @@ mod types;
 
 use tauri::Manager;
 use types::DBPath;
-use db::{db_init, search_by_tags, fetch_note, upsert_note, upsert_tag_note};
+use db::{db_init, search_by_tags, fetch_note, upsert_note, upetch_tag_note};
 
 fn main() {
     tauri::Builder::default()
         .setup(|app: &mut tauri::App| {
             let db_path = app.path_resolver().app_data_dir().unwrap().join("database.db");
-            db_init(&db_path);
+            db_init(&db_path)?;
 
             app.manage(DBPath(db_path));
             
@@ -23,7 +23,7 @@ fn main() {
             search_by_tags,
             fetch_note,
             upsert_note,
-            upsert_tag_note
+            upetch_tag_note
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

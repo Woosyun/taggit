@@ -1,9 +1,9 @@
 use std::{collections::HashSet, fs};
-use rusqlite::{params, params_from_iter, Connection, Result, ToSql};
-use crate::types::{Note, Tag, TagNote, DBPath};
+use rusqlite::{ffi::sqlite3_last_insert_rowid, params, params_from_iter, Connection, Result};
+use crate::types::{Note, Tag, DBPath};
 
 pub fn db_init(db_path: &std::path::PathBuf) -> Result<Connection, String> {
-    // println!("(connect_db) db_path: {:?}", &db_path.0);
+    println!("(connect_db) db_path: {:?}", db_path);
     
     if let Some(parent) = db_path.parent() {
         fs::create_dir_all(parent).map_err(|e| e.to_string())?;
@@ -11,11 +11,12 @@ pub fn db_init(db_path: &std::path::PathBuf) -> Result<Connection, String> {
     
     let conn: Connection = Connection::open(&db_path).map_err(|e| e.to_string())?;
 
+    //TODO: decide type of last_modified
     conn.execute("
         CREATE TABLE IF NOT EXISTS notes (
             id INTEGER PRIMARY KEY,
             title TEXT NOT NULL,
-            last_modified INTEGER NOT NULL,
+            last_modified TEXT DEFAULT CURRENT_TIMESTAMP,
             content BLOB
         )", 
         ()
@@ -24,8 +25,8 @@ pub fn db_init(db_path: &std::path::PathBuf) -> Result<Connection, String> {
     conn.execute("
         CREATE TABLE IF NOT EXISTS tags (
             id INTEGER PRIMARY KEY,
-            name TEXT NOT NULL,
-        )", 
+            name TEXT NOT NULL
+        )",
         ()
     ).map_err(|e| e.to_string())?;
 
@@ -77,7 +78,7 @@ pub fn search_by_tags(db_path: tauri::State<DBPath>, tags: Vec<&str>) -> Result<
 }
 
 #[tauri::command]
-pub fn fetch_note (db_path: tauri::State<DBPath>, note_id: &str) -> Result<Note, String>{
+pub fn fetch_note (db_path: tauri::State<DBPath>, note_id: i64) -> Result<Note, String>{
     //find a note and return
     let conn = Connection::open(&db_path.0).map_err(|e| e.to_string())?;
     let query = format!("
@@ -90,10 +91,10 @@ pub fn fetch_note (db_path: tauri::State<DBPath>, note_id: &str) -> Result<Note,
         println!("(fetch_note) row: {:?}", &row);
         
         Ok(Note {
-            id: row.get(0)?,
-            title: row.get(1)?,
-            content: row.get(2)?,
-            last_modified: row.get(3)?,
+            id: row.get("id")?,
+            title: row.get("title")?,
+            content: row.get("content")?,
+            last_modified: row.get("last_modified")?,
         })
     }).map_err(|e| e.to_string())?;
 
@@ -110,34 +111,38 @@ pub fn fetch_note (db_path: tauri::State<DBPath>, note_id: &str) -> Result<Note,
 }
 
 #[tauri::command]
-pub fn upsert_note(db_path: tauri::State<DBPath>, note_id: String, content: String) -> Result<(), String> {
-    //get title
-    let title = content.lines().next().unwrap_or("Untitled");
+pub fn upsert_note(db_path: tauri::State<DBPath>, note_id: i64, title: String, content: String, is_update: bool) -> Result<i64, String> {
+    println!("(upsert_note) note_id: {}", note_id);
     
+    //get title
+    // let title = content.lines().next().unwrap_or("Untitled");
+
     //handle case which note does not exist
     let conn = Connection::open(&db_path.0).map_err(|e| e.to_string())?;
-    if note_id == "" {
+    if !is_update {
         println!("(upsert_note) note_id is empty string, creating new note");
         let mut stmt = conn.prepare("
             INSERT INTO notes (title, last_modified, content) VALUES ($1, current_timestamp, $2)
         ").map_err(|e| e.to_string())?;
-        stmt.execute([title, &content]).map_err(|e| e.to_string())?;
+        stmt.execute(params![title, content]).map_err(|e| e.to_string())?;
+        let last_id = conn.last_insert_rowid();
+
+        return Ok(last_id);
     } else {
-        println!("(upsert_note) note_id is not empty string, updating note");
+        println!("(upsert_note) note_id does exist, updating note");
         let mut stmt = conn.prepare("
             UPDATE notes 
             SET title = $1, last_modified = current_timestamp, content = $2 
             WHERE id = $3
         ").map_err(|e| e.to_string())?;
-        stmt.execute([title, &content, &note_id]).map_err(|e| e.to_string())?;
+        stmt.execute(params![title, content, note_id]).map_err(|e| e.to_string())?;
+        //return last inserted rowid
+        return Ok(note_id);
     }
-
-    Ok(())
 }
 
-//여기서 update도 하고 fetch도 하게 할 수 있을까?
 #[tauri::command]
-pub fn upsert_tag_note(db_path: tauri::State<DBPath>, note_id: String, tag_names: Vec<String>, is_modification: bool) -> Result<HashSet<Tag>, String> {
+pub fn upetch_tag_note(db_path: tauri::State<DBPath>, note_id: i64, tags: Vec<String>, is_update: bool) -> Result<HashSet<Tag>, String> {
     use std::collections::HashSet;
     
     let conn = Connection::open(&db_path.0).map_err(|e| e.to_string())?;
@@ -151,22 +156,27 @@ pub fn upsert_tag_note(db_path: tauri::State<DBPath>, note_id: String, tag_names
     ").map_err(|e| e.to_string())?;
     
     let old_tags = stmt.query_map([&note_id], |row| {
-        Ok(Tag { id: row.get(0)?, name: row.get(1)? })
+        Ok(Tag { id: row.get("id")?, name: row.get("name")? })
     })
     .map_err(|e| e.to_string())?
     .collect::<Result<HashSet<_>, _>>()
     .map_err(|e| e.to_string())?;
 
-    if is_modification {
+    if is_update {
         //new_tags - old_tags = tags to be added
-        let new_tags = tag_names.iter().map(|tag_name| get_tag_id(&conn, tag_name)).collect::<Result<HashSet<_>, _>>().map_err(|e| e.to_string())?;
+        let new_tags = tags.iter().map(|tag_name| find_tag(&conn, tag_name)).collect::<Result<HashSet<_>, _>>().map_err(|e| e.to_string())?;
         let tags_to_add = new_tags.difference(&old_tags).collect::<HashSet<_>>();
-        for tag in &tags_to_add {
-            println!("(upsert_tag_note) adding tag: {:?}", tag.name);
-        }
+        // for tag in &tags_to_add {
+        //     println!("(upsert_tag_note) adding tag: {:?}", tag.name);
+        // }
         
         for tag in tags_to_add {
-            conn.execute("INSERT INTO tag_note (tag_id, note_id) VALUES (?, ?)", params![tag.id, &note_id]).unwrap();
+            println!("(upetch_tag_note-tags_to_add) tag id: {}, note id: {}", tag.id, note_id);
+            
+            conn.execute("INSERT INTO tag_note (tag_id, note_id) VALUES (?, ?)", params![tag.id, note_id]).unwrap_or_else(|e| {
+                println!("(upetch_tag_note) error : {}", e);
+                1
+            });
         }
         
         //old_tags - new_tags = tags to be deleted
@@ -176,7 +186,13 @@ pub fn upsert_tag_note(db_path: tauri::State<DBPath>, note_id: String, tag_names
         }
 
         for tag in tags_to_delete {
-            conn.execute("DELETE FROM tag_note WHERE tag_id = ? AND note_id = ?", params![tag.id, &note_id]).unwrap();
+            println!("(upetch_tag_note-tags_to_add) tag id: {}, note id: {}", tag.id, note_id);
+            
+            conn.execute("DELETE FROM tag_note WHERE tag_id = ? AND note_id = ?", params![tag.id, note_id]).
+            unwrap_or_else(|e| {
+                println!("(upetch_tag_note) error : {}", e);
+                1
+            });
         }
 
         return Ok(new_tags);
@@ -187,15 +203,16 @@ pub fn upsert_tag_note(db_path: tauri::State<DBPath>, note_id: String, tag_names
     Ok(old_tags)
 }
 
-fn get_tag_id(conn: &Connection, tag: &str) -> Result<Tag, rusqlite::Error> {
+fn find_tag(conn: &Connection, tag: &str) -> Result<Tag, rusqlite::Error> {
     let mut stmt = conn.prepare("SELECT * FROM tags WHERE name = ?").unwrap();
-    let id = stmt.query_row(params![tag], |row| row.get(0)).ok();
+    let id = stmt.query_row(params![tag], |row| row.get("id")).ok();
     if id.is_none() {
-        conn.execute("INSERT INTO tags (name, file_count) VALUES (?, 1)", params![tag]).unwrap();
-        let id = conn.last_insert_rowid() as u64;
-        // println!("(insert_notes_with_tags) inserted tag: {} with id: {}", tag, id);
+        conn.execute("INSERT INTO tags (name) VALUES (?)", params![tag]).unwrap();
+        let id = conn.last_insert_rowid();
+        println!("(insert_notes_with_tags) inserted tag: {} with id: {}", tag, id);
         Ok(Tag {id, name: tag.to_string()})
     } else {
+        println!("(find_tag) found tag. name: {}, id: {}", tag, id.unwrap());
         Ok(Tag {id: id.unwrap(), name: tag.to_string()})
     }
 }
