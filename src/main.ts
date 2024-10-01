@@ -1,18 +1,18 @@
-import { renderEditor } from './editor';
+import { initEditor, renderEditor } from './editor';
 import './styles.css';
 import { invoke } from '@tauri-apps/api/tauri';
 import { Note } from './types';
-import { addTag, deleteTag, getTags } from './tags';
+import { addTag, getTags, initTagbar, renderTagbar } from './tagbar';
+import { getNoteOptionPopoverTrigger, initNoteOption } from './note_option';
 
-let tagbar: any;
-let noteContainer: any;
 let itemContainer: any;
-
 window.addEventListener('DOMContentLoaded', () => {
-    tagbar = document.querySelector('#tagbar');
-    noteContainer = document.querySelector('#note-container');
+    initEditor();
+    initTagbar();
+    initNoteOption();
+
     itemContainer = document.querySelector('#item-container');
-    if (!tagbar || !noteContainer || !itemContainer) {
+    if (!itemContainer) {
         console.error('missing tagbar or note-container or item-container');
         return;
     }
@@ -34,26 +34,11 @@ async function handleSubmit(e: any) {
         renderTagbar();
     }
 
-    search();
+    await search();
     searchInput.value = '';
 }
 
-function renderTagbar() {
-    tagbar.innerHTML = '';
-    getTags().forEach(tag => {
-        const tagElement = document.createElement('div');
-        tagElement.classList.add('badge');
-        tagElement.innerHTML = tag;
-        tagElement.addEventListener('click', () => {
-            if (!deleteTag(tag)) return;
-            renderTagbar();
-            search();
-        });
-        tagbar.appendChild(tagElement);
-    });
-}
-
-async function search() {
+export async function search() {
     console.log('searching... tags: ', getTags());
     
     const notes = await invoke('search_by_tags', { tags: getTags() }) as Note[];
@@ -61,10 +46,10 @@ async function search() {
 
     itemContainer.innerHTML = '';
     notes.forEach(note => {
-        const item = document.createElement("p");
-        item.innerText = note.title;
-        item.addEventListener('click', async () => {
-            //fetch note
+        const card = document.createElement("div");
+        card.classList.add('note-card');
+        card.innerText = note.title;
+        card.addEventListener('click', async () => {
             console.log("fetching note: ", note.id);
             invoke('fetch_note', { noteId: note.id })
                 .then(note => {
@@ -72,6 +57,9 @@ async function search() {
                     renderEditor(note as Note);
                 });
         });
-        itemContainer.appendChild(item);
+
+        //add option button ":"
+        card.appendChild(getNoteOptionPopoverTrigger(note));
+        itemContainer.appendChild(card);
     });
 }

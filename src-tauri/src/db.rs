@@ -1,5 +1,5 @@
 use std::{collections::HashSet, fs};
-use rusqlite::{ffi::sqlite3_last_insert_rowid, params, params_from_iter, Connection, Result};
+use rusqlite::{params, params_from_iter, Connection, Result};
 use crate::types::{Note, Tag, DBPath};
 
 pub fn db_init(db_path: &std::path::PathBuf) -> Result<Connection, String> {
@@ -45,15 +45,26 @@ pub fn db_init(db_path: &std::path::PathBuf) -> Result<Connection, String> {
 }
 
 #[tauri::command]
-pub fn search_by_tags(db_path: tauri::State<DBPath>, tags: Vec<&str>) -> Result<Vec<Note>, String> {
-    // println!("(find_notes_by_tags) received tags: {:?}", &tags);
-    
+pub fn search_by_tags(db_path: tauri::State<DBPath>, tags: Vec<String>) -> Result<Vec<Note>, String> {
+    println!("(find_notes_by_tags) received tags: {:?}", &tags);
+
     let conn = Connection::open(&db_path.0).map_err(|e| e.to_string())?;
-    let placeholder: String = tags.iter().map(|_| "?").collect::<Vec<&str>>().join(",");
     let len = tags.len();
 
-    // println!("(find_notes_by_tags) placeholder: {:?}", &placeholder);
+    //handle case which tags are empty array => search for all notes
+    if len == 0 {
+        let mut stmt = conn.prepare("
+            SELECT n.id, n.title, n.last_modified
+            FROM notes n
+        ").map_err(|e| e.to_string())?;
+        let notes = stmt.query_map([], |row| {
+            Ok(Note {id: row.get("id")?, title: row.get("title")?, last_modified: row.get("last_modified")?, content: "".to_string()})
+        }).map_err(|e| e.to_string())?.collect::<Result<Vec<_>>>().map_err(|e| e.to_string())?;
+
+        return Ok(notes);
+    }
     
+    let placeholder: String = tags.iter().map(|_| "?").collect::<Vec<&str>>().join(",");
     let query = format!("
         SELECT n.id, n.title, n.last_modified
         FROM notes n
@@ -139,6 +150,18 @@ pub fn upsert_note(db_path: tauri::State<DBPath>, note_id: i64, title: String, c
         //return last inserted rowid
         return Ok(note_id);
     }
+}
+
+#[tauri::command]
+pub fn delete_note(dp_path: tauri::State<DBPath>, note_id: i64) -> Result<(), String> {
+    let conn = Connection::open(&dp_path.0).map_err(|e| e.to_string())?;
+
+    println!("(delete_note) deleting note with id: {}", note_id);
+    
+    let mut stmt = conn.prepare("DELETE FROM notes WHERE id = ?").map_err(|e| e.to_string())?;
+    stmt.execute(params![note_id]).map_err(|e| e.to_string())?;
+    
+    Ok(())
 }
 
 #[tauri::command]

@@ -7,7 +7,14 @@ mod types;
 
 use tauri::Manager;
 use types::DBPath;
-use db::{db_init, search_by_tags, fetch_note, upsert_note, upetch_tag_note};
+use db::{
+    db_init, 
+    search_by_tags, 
+    fetch_note, 
+    upsert_note, 
+    delete_note,
+    upetch_tag_note
+};
 
 fn main() {
     tauri::Builder::default()
@@ -23,6 +30,7 @@ fn main() {
             search_by_tags,
             fetch_note,
             upsert_note,
+            delete_note,
             upetch_tag_note
         ])
         .run(tauri::generate_context!())

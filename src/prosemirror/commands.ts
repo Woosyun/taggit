@@ -17,7 +17,7 @@ import { Schema } from 'prosemirror-model'
 import { Command } from 'prosemirror-state'
 import { invoke } from '@tauri-apps/api/tauri'
 import { Note } from '../types'
-import { getTags } from '../tags'
+import { getTags } from '../tagbar'
 
 export default function getCommandBindings(schema: Schema, note: Note | null): {[key: string]: Command} {
     const listItemType = schema.nodes.list_item;

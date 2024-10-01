@@ -8,7 +8,15 @@ import { buildInputRules } from './prosemirror/official/input_rules.ts';
 import './prosemirror/style.css';
 
 import { Note } from "./types.ts";
-import { invoke } from "@tauri-apps/api/tauri";
+
+let noteContainer: HTMLDivElement;
+export function initEditor() {
+    noteContainer = document.querySelector('#note-container') as HTMLDivElement;
+    if (!noteContainer) {
+        console.error('missing note-container');
+        return;
+    }
+}
 
 declare global {
     interface Window {
@@ -38,13 +46,8 @@ export const renderEditor = async (note: Note | null) => {
             JSON.parse(note.content)
         );
 
-    const noteContainer = document.getElementById('note-container');
-    if (!noteContainer) {
-        console.error('noteContainer not found');
-        return;
-    } else {
-        noteContainer.innerHTML = '';
-    }
+
+    noteContainer.innerHTML = '';
     
     window.view = new EditorView(noteContainer, {
         state,
