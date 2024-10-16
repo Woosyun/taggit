@@ -3,11 +3,29 @@ body {
 	text-align: center;
 }
 
-.btn {
-    background-color: #007bff;
-    color: white;
-    border: none;
-    padding: 10px 20px;
-    border-radius: 5px;
+input {
+    outline: none;
+    padding: 0.5rem;
+    border-radius: 0.5rem;
+    border: 1px solid rgba(128, 128, 128, 0.386);
+}
+input:focus {
+    border-color: black;
+}
+button {
+    outline: none;
+    padding: 0.5rem;
+    border: 1px solid transparent;
+    border-radius: 0.5rem;
+}
+button:hover {
+    cursor: pointer;
+    border-color: black;
+}
+.badge {
+    margin: 0.5rem;
+}
+.badge:hover {
+    color: red;
     cursor: pointer;
 }
