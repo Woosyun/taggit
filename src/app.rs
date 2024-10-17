@@ -3,6 +3,7 @@ use crate::error_template::{AppError, ErrorTemplate};
 use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
+use crate::utils::note::*;
 
 #[component]
 pub fn App() -> impl IntoView {
@@ -29,6 +30,8 @@ pub fn App() -> impl IntoView {
         </Router>
     }
 }
+
+
 
 #[component]
 fn HomePage() -> impl IntoView {
@@ -59,6 +62,7 @@ fn HomePage() -> impl IntoView {
 
     let render_note_items = move || {
         log!("tags: {:?}", tags().iter().collect::<Vec<_>>());
+
     };
 
     let input_element: NodeRef<html::Input> = create_node_ref();
@@ -86,4 +90,9 @@ fn HomePage() -> impl IntoView {
         {render_tags}
         {render_note_items}
     }
+}
+
+#[server(Search)]
+async fn search(tags: HashSet<String>) -> Result<Vec<NoteItem>, ServerFnError> {
+    Ok(vec![])
 }
