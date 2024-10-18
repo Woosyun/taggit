@@ -1,9 +1,8 @@
-use std::collections::HashSet;
 use crate::error_template::{AppError, ErrorTemplate};
 use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
-use crate::utils::note::*;
+use std::collections::HashSet;
 
 #[component]
 pub fn App() -> impl IntoView {
@@ -31,48 +30,29 @@ pub fn App() -> impl IntoView {
     }
 }
 
-
-
 #[component]
 fn HomePage() -> impl IntoView {
     use leptos::logging::log;
-    
+
     let (tags, set_tags) = create_signal(HashSet::<String>::new());
 
-    let render_tags = move || {
-        tags()
-            .iter()
-            .map(|tag: &String| {
-                let tmp = tag.clone();
-                view! {
-                    <span
-                        class="badge"
-                        on:click=move |_| {
-                            set_tags.update(|tags: &mut HashSet<String>| {
-                                tags.remove(&tmp);
-                            })
-                        }
-                    >
-                        {tag}
-                    </span>
-                }
+    let note_items = create_resource(tags, |tags| async move {
+        log!("searching notes by tags {:?}", tags);
+
+        search(tags)
+            .await
+            .unwrap_or_else(|err| {
+                log!("error while fetching note items: {:?}", err);
+                vec![]
             })
-            .collect::<Vec<_>>()
-    };
-
-    let render_note_items = move || {
-        log!("tags: {:?}", tags().iter().collect::<Vec<_>>());
-
-    };
+    });
 
     let input_element: NodeRef<html::Input> = create_node_ref();
     let on_submit = move |ev: ev::SubmitEvent| {
         ev.prevent_default();
-        
-        let value = input_element()
-            .expect("<input> to exist")
-            .value();
-        
+
+        let value = input_element().expect("<input> to exist").value();
+
         set_tags.update(|tags: &mut HashSet<String>| {
             tags.insert(value);
         });
@@ -87,12 +67,61 @@ fn HomePage() -> impl IntoView {
             <input type="text" placeholder="..." node_ref=input_element />
             <button type="submit">submit</button>
         </form>
-        {render_tags}
-        {render_note_items}
+
+        {move || {
+            tags()
+                .iter()
+                .map(|tag: &String| {
+                    let tmp = tag.clone();
+                    view! {
+                        <span
+                            class="badge"
+                            on:click=move |_| {
+                                set_tags.update(|tags: &mut HashSet<String>| {
+                                    tags.remove(&tmp);
+                                })
+                            }
+                        >
+                            {tag}
+                        </span>
+                    }
+                })
+                .collect::<Vec<_>>()
+        }}
+
+        {move || match note_items.get() {
+            Some(note_items) => {
+                view! {
+                    <ul>
+                        {note_items.into_iter().map(|note_item| {
+                            view! {
+                                <li>
+                                    <p>{note_item}</p>
+                                </li>
+                            }
+                        }).collect::<Vec<_>>()}
+                    </ul>
+                }
+            },
+            _ => {
+                view! {
+                    <ul>
+                        <li>
+                            <p>loading...</p>
+                        </li>
+                    </ul>
+                }
+            }
+        }}
     }
 }
 
-#[server(Search)]
-async fn search(tags: HashSet<String>) -> Result<Vec<NoteItem>, ServerFnError> {
-    Ok(vec![])
+#[server(Search, "/api")]
+async fn search(tags: HashSet<String>) -> Result<Vec<i32>, ServerFnError> {
+    use logging::log;
+    log!("(search)searching notes by tags {:?}", tags);
+
+    
+    
+    Ok(vec![0, 1, 2])
 }
