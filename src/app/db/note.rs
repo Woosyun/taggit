@@ -2,41 +2,16 @@ use mongodb::{
     error::Error, 
     Collection, 
     results::InsertOneResult,
-    bson::{doc, oid::ObjectId},
+    bson,
+    bson::oid::ObjectId,
     options::FindOptions,
 };
-use serde::{Serialize, Deserialize};
+// use serde::{Serialize, Deserialize};
 use futures::stream::TryStreamExt;
+use crate::app::models::{Note, NoteItem};
 
-#[derive(Serialize, Deserialize, Clone)]
-pub struct Note {
-    id: ObjectId,
-    title: String,
-    body: String,
-    tags: Vec<String>,
-    author: ObjectId,
-    last_modified: u64,
-}
 
-#[derive(Serialize, Deserialize, Clone)]
-pub struct NoteItem {
-    id: ObjectId,
-    title: String,
-    author: ObjectId,
-    last_modified: u64,
-}
-impl From<Note> for NoteItem {
-    fn from(note: Note) -> Self {
-        NoteItem {
-            id: note.id,
-            title: note.title,
-            author: note.author,
-            last_modified: note.last_modified,
-        }
-    }
-}
-
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct NoteService {
     collection: Collection::<Note>,
 }
@@ -47,14 +22,15 @@ impl NoteService {
             collection
         }
     }
+    // note id 자동 생성?
     pub async fn insert_one(&self, note: Note) -> Result<InsertOneResult, Error> {
         self.collection.insert_one(note).await
     }
     pub async fn find_one(&self, id: ObjectId) -> Result<Option<Note>, Error> {
-        self.collection.find_one(doc! { "id": id }).await
+        self.collection.find_one(bson::doc! { "id": id }).await
     }
     pub async fn find_items_by_tags(&self, tags: Vec<String>) -> Result<Vec<NoteItem>, Error> {
-        let projection = doc! {
+        let projection = bson::doc! {
             "id": 1,
             "title": 1,
             "author": 1,
@@ -67,9 +43,9 @@ impl NoteService {
             .build();
 
         let query = if tags.is_empty() {
-            doc! {}
+            bson::doc! {}
         } else {
-            doc! {"tags": { "$all": tags}}
+            bson::doc! {"tags": { "$all": tags}}
         };
         
         let note_items = self.collection.find(query)

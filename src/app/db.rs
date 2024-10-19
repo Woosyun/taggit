@@ -1,11 +1,12 @@
 use mongodb::{error::Error, options::ClientOptions, Client};
+use crate::app::models::Note;
 
 pub mod note;
-use note::*;
+use note::NoteService;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DB {
-    note_service: NoteService,
+    pub note_service: NoteService,
 }
 
 impl DB {

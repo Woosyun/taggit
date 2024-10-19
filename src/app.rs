@@ -3,6 +3,10 @@ use leptos::*;
 use leptos_meta::*;
 use leptos_router::*;
 use std::collections::HashSet;
+pub mod api;
+pub mod models;
+#[cfg(feature = "ssr")]
+pub mod db;
 
 #[component]
 pub fn App() -> impl IntoView {
@@ -11,6 +15,7 @@ pub fn App() -> impl IntoView {
 
     view! {
         <Stylesheet id="leptos" href="pkg/taggit.css"/>
+        // <Stylesheet id="leptos" href="pkg/taildwind.css"/>
         <Title text="Welcome to Leptos"/>
 
         <Router fallback=|| {
@@ -39,7 +44,7 @@ fn HomePage() -> impl IntoView {
     let note_items = create_resource(tags, |tags| async move {
         log!("searching notes by tags {:?}", tags);
 
-        search(tags)
+        api::search(tags)
             .await
             .unwrap_or_else(|err| {
                 log!("error while fetching note items: {:?}", err);
@@ -93,10 +98,10 @@ fn HomePage() -> impl IntoView {
             Some(note_items) => {
                 view! {
                     <ul>
-                        {note_items.into_iter().map(|note_item| {
+                        {note_items.into_iter().map(move |note_item| {
                             view! {
                                 <li>
-                                    <p>{note_item}</p>
+                                    <p>{note_item.title}</p>
                                 </li>
                             }
                         }).collect::<Vec<_>>()}
@@ -114,14 +119,4 @@ fn HomePage() -> impl IntoView {
             }
         }}
     }
-}
-
-#[server(Search, "/api")]
-async fn search(tags: HashSet<String>) -> Result<Vec<i32>, ServerFnError> {
-    use logging::log;
-    log!("(search)searching notes by tags {:?}", tags);
-
-    
-    
-    Ok(vec![0, 1, 2])
 }
