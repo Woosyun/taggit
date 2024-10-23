@@ -3,13 +3,13 @@ use mongodb::{
     Collection, 
     results::InsertOneResult,
     bson,
-    bson::oid::ObjectId,
+    bson::DateTime,
     options::FindOptions,
 };
 // use serde::{Serialize, Deserialize};
 use futures::stream::TryStreamExt;
-use crate::app::models::{Note, NoteItem};
-
+use crate::app::models::Note;
+// use std::str::FromStr;
 
 #[derive(Clone, Debug)]
 pub struct NoteService {
@@ -23,15 +23,27 @@ impl NoteService {
         }
     }
     // note id 자동 생성?
-    pub async fn insert_one(&self, note: Note) -> Result<InsertOneResult, Error> {
-        self.collection.insert_one(note).await
+    pub async fn insert_one(&self, mut new_note: Note) -> Result<InsertOneResult, Error> {
+        // let mut new_note = Note::new(
+        //     title, 
+        //     body, 
+        //     tags, 
+        //     author_id, 
+        // ).map_err(|err| Error::custom(err))?;
+
+        use leptos::logging::log;
+        log!("(insert_one)inserting note {:?}", new_note);
+        
+        new_note.set_last_modified(DateTime::now().to_string());
+        
+        self.collection.insert_one(new_note).await
     }
-    pub async fn find_one(&self, id: ObjectId) -> Result<Option<Note>, Error> {
+    pub async fn find_one(&self, id: String) -> Result<Option<Note>, Error> {
         self.collection.find_one(bson::doc! { "id": id }).await
     }
-    pub async fn find_items_by_tags(&self, tags: Vec<String>) -> Result<Vec<NoteItem>, Error> {
+    pub async fn find_items_by_tags(&self, tags: Vec<String>) -> Result<Vec<Note>, Error> {
         let projection = bson::doc! {
-            "id": 1,
+            "_id": 1,
             "title": 1,
             "author": 1,
             "last_modified": 1,
@@ -52,10 +64,7 @@ impl NoteService {
             .with_options(options)
             .await?
             .try_collect::<Vec<Note>>()
-            .await?
-            .into_iter()
-            .map(NoteItem::from)
-            .collect::<Vec<NoteItem>>();
+            .await?;
 
         Ok(note_items)
     }

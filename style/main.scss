@@ -1,6 +1,6 @@
 body {
 	font-family: sans-serif;
-	text-align: center;
+	// text-align: center;
 }
 
 input {
@@ -28,4 +28,23 @@ button:hover {
 .badge:hover {
     color: red;
     cursor: pointer;
+}
+
+#topbar-container {
+    display: flex;
+    justify-content: space-between;;
+}
+
+.note-container {
+    display: flex;
+    flex-direction: column;
+    width: 90dvw;
+    margin: 0 auto;
+    height: 95dvh;
+    gap: 1rem;
+}
+
+.note-body {
+    flex-grow: 1;
+    resize: none;
 }
