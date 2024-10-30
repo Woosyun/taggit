@@ -1,5 +1,9 @@
-use leptos::*;
-use leptos_router::*;
+use leptos::prelude::*;
+use leptos_router::{
+    hooks::*,
+    params::Params,
+    components::Form
+};
 use crate::{
     api, 
     models::Note,
@@ -36,7 +40,7 @@ pub fn HomePage() -> impl IntoView {
             .get_tags()
     };
 
-    let note_items = create_resource( tags, |tags: Vec<String>| async move {
+    let note_items = Resource::new( tags, |tags: Vec<String>| async move {
         // let tags = tags.iter().map(|&t| t.to_string()).collect();
         api::search(tags).await
             .unwrap_or_else(|e| {

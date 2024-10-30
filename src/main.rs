@@ -2,10 +2,9 @@
 #[tokio::main]
 async fn main() {
     use axum::Router;
-    use leptos::*;
+    use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use taggit::app::*;
-    use taggit::fileserv::file_and_error_handler;
     use taggit::db;
     use dotenv::dotenv;
 
@@ -22,7 +21,7 @@ async fn main() {
     // <https://github.com/leptos-rs/start-axum#executing-a-server-on-a-remote-machine-without-the-toolchain>
     // Alternately a file can be specified such as Some("Cargo.toml")
     // The file would need to be included with the executable when moved to deployment
-    let conf = get_configuration(None).await.unwrap();
+    let conf = get_configuration(None).unwrap();
     let leptos_options = conf.leptos_options;
     let addr = leptos_options.site_addr;
     let routes = generate_route_list(App);
@@ -41,14 +40,17 @@ async fn main() {
                 let db_state = db_state.clone();
                 move || provide_context(db_state.clone())
             },
-            App
+            {
+                let leptos_options = leptos_options.clone();
+                move || shell(leptos_options.clone())
+            }
         )
         // .leptos_routes(&leptos_options, routes, App)
-        .fallback(file_and_error_handler)
+        .fallback(leptos_axum::file_and_error_handler(shell))
         .with_state(leptos_options);
 
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
-    logging::log!("listening on http://{}", &addr);
+    log!("listening on http://{}", &addr);
     axum::serve(listener, app.into_make_service())
         .await
         .unwrap();

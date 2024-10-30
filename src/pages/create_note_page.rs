@@ -1,5 +1,6 @@
-use ev::SubmitEvent;
-use leptos::*;
+use leptos::ev::SubmitEvent;
+use leptos::prelude::*;
+use leptos::html;
 use crate::{
     api, 
     models,
@@ -8,14 +9,15 @@ use crate::{
 #[allow(unused_variables, unused_imports)]
 #[component]
 pub fn CreateNotePage() -> impl IntoView {
-    use logging::log;
     use web_sys::window;
     let window = window().unwrap();
 
-    let title_ref = create_node_ref::<html::Input>();
-    let body_ref = create_node_ref::<html::Textarea>();
+    let title_ref: NodeRef<html::Input> = NodeRef::new();
+    // let title_ref = create_node_ref::<html::Input>();
+    let body_ref: NodeRef<html::Textarea> = NodeRef::new();
+    // let body_ref = create_node_ref::<html::Textarea>();
 
-    let insert_note = create_action(|input: &(String, String, Vec<String>, String)| {
+    let insert_note = Action::new(|input: &(String, String, Vec<String>, String)| {
         let title = input.0.to_owned();
         let body = input.1.to_owned();
         let tags = input.2.to_owned();
@@ -31,13 +33,13 @@ pub fn CreateNotePage() -> impl IntoView {
     let on_submit = move |ev: SubmitEvent| {
         ev.prevent_default();
 
-        let title = title_ref().expect("title_ref to exist").value();
+        let title = title_ref.get().expect("title_ref to exist").value();
         if let Err(err) = models::Note::validate_title(&title) {
             window.alert_with_message(err).unwrap();
             return;
         }
 
-        let body = body_ref().expect("body_ref to exist").value();
+        let body = body_ref.get().expect("body_ref to exist").value();
         if let Err(err) = models::Note::validate_body(&body) {
             window.alert_with_message(err).unwrap();
             return;

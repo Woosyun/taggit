@@ -1,10 +1,10 @@
 pub mod app;
-pub mod error_template;
+// pub mod error_template;
 pub mod api;
 pub mod models;
 pub mod pages;
-#[cfg(feature = "ssr")]
-pub mod fileserv;
+// #[cfg(feature = "ssr")]
+// pub mod fileserv;
 #[cfg(feature = "ssr")]
 pub mod db;
 
@@ -13,5 +13,5 @@ pub mod db;
 pub fn hydrate() {
     use crate::app::*;
     console_error_panic_hook::set_once();
-    leptos::mount_to_body(App);
+    leptos::mount::hydrate_body(App);
 }

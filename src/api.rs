@@ -1,11 +1,12 @@
-use leptos::{server, ServerFnError};
+use leptos::prelude::{ServerFnError, server};
+// use leptos::{server, ServerFnError};
 use super::models::Note;
 #[cfg(feature = "ssr")]
 use crate::db::DB;
 
 #[server(Search, "/api")]
 pub async fn search(tags: Vec<String>) -> Result<Vec<Note>, ServerFnError> {
-    use leptos::{logging::log, use_context};
+    use leptos::prelude::{log, use_context};
 
     let note_service = match use_context::<DB>() {
         Some(db) => db.note_service,
@@ -40,7 +41,7 @@ pub async fn insert_note(
     tags: Vec<String>, 
     author_id: String
 ) -> Result<String, ServerFnError<String>> {
-    use leptos::{use_context, logging::log};
+    use leptos::prelude::{log, use_context};
 
     log!("(api/insert_note) entered");
 
@@ -73,7 +74,8 @@ pub async fn insert_note(
 #[server(FetchNoteById, "/api")]
 pub async fn fetch_note_by_id(id: String) -> Result<Note, ServerFnError> {
     //check if the note exists
-    use leptos::use_context;
+    use leptos::prelude::use_context;
+    
     let note_service = match use_context::<DB>() {
         Some(db) => db.note_service,
         None => return Err(ServerFnError::ServerError("cannot connect to database".to_string()))
