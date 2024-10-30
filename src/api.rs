@@ -1,10 +1,10 @@
 use leptos::{server, ServerFnError};
 use super::models::Note;
 #[cfg(feature = "ssr")]
-use crate::app::db::DB;
+use crate::db::DB;
 
 #[server(Search, "/api")]
-pub async fn search(tags: std::collections::HashSet<String>) -> Result<Vec<Note>, ServerFnError> {
+pub async fn search(tags: Vec<String>) -> Result<Vec<Note>, ServerFnError> {
     use leptos::{logging::log, use_context};
 
     let note_service = match use_context::<DB>() {
@@ -15,7 +15,7 @@ pub async fn search(tags: std::collections::HashSet<String>) -> Result<Vec<Note>
     log!("(search)searching notes by tags {:?}", tags);
 
     let note_items = note_service
-        .find_items_by_tags(tags.into_iter().collect::<Vec<String>>())
+        .find_items_by_tags(tags)
         .await
         .map_err(|err| ServerFnError::ServerError(format!("error while fetching note items: {:?}", err)));
 

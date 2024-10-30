@@ -1,5 +1,5 @@
 use mongodb::{error::Error, options::ClientOptions, Client};
-use crate::app::models::Note;
+use crate::models::Note;
 
 pub mod note;
 use note::NoteService;

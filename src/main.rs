@@ -6,6 +6,7 @@ async fn main() {
     use leptos_axum::{generate_route_list, LeptosRoutes};
     use taggit::app::*;
     use taggit::fileserv::file_and_error_handler;
+    use taggit::db;
     use dotenv::dotenv;
 
     // #[derive(Debug, Clone, )]

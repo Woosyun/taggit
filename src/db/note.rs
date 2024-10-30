@@ -8,7 +8,7 @@ use mongodb::{
 };
 // use serde::{Serialize, Deserialize};
 use futures::stream::TryStreamExt;
-use crate::app::models::Note;
+use crate::models::Note;
 // use std::str::FromStr;
 
 #[derive(Clone, Debug)]
