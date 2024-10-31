@@ -9,7 +9,7 @@ use mongodb::{
 // use serde::{Serialize, Deserialize};
 use futures::stream::TryStreamExt;
 use crate::models::Note;
-// use std::str::FromStr;
+use leptos::prelude::*;
 
 #[derive(Clone, Debug)]
 pub struct NoteService {
@@ -31,7 +31,6 @@ impl NoteService {
         //     author_id, 
         // ).map_err(|err| Error::custom(err))?;
 
-        use leptos::logging::log;
         log!("(insert_one)inserting note {:?}", new_note);
         
         new_note.set_last_modified(DateTime::now().to_string());

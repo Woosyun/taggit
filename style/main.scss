@@ -34,17 +34,24 @@ button:hover {
     cursor: pointer;
     border-color: black;
 }
+
+.topbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    // padding: 1rem;
+}
+
+// .tagbar {
+//     display: flex;
+//     gap: 0.5rem;
+// }
 .badge {
     margin: 0.5rem;
 }
 .badge:hover {
     color: red;
     cursor: pointer;
-}
-
-#topbar-container {
-    display: flex;
-    justify-content: space-between;;
 }
 
 .note-container {

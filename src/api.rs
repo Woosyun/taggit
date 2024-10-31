@@ -1,5 +1,4 @@
 use leptos::prelude::{ServerFnError, server};
-// use leptos::{server, ServerFnError};
 use super::models::Note;
 #[cfg(feature = "ssr")]
 use crate::db::DB;
@@ -13,7 +12,7 @@ pub async fn search(tags: Vec<String>) -> Result<Vec<Note>, ServerFnError> {
         None => return Err(ServerFnError::ServerError("cannot connect to database".to_string()))
     };
 
-    log!("(search)searching notes by tags {:?}", tags);
+    // log!("(api/search)searching notes by tags {:?}", tags);
 
     let note_items = note_service
         .find_items_by_tags(tags)
@@ -30,7 +29,7 @@ pub async fn search(tags: Vec<String>) -> Result<Vec<Note>, ServerFnError> {
             }
         }
     }
-        
+
     note_items
 }
 
