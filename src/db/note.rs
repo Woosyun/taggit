@@ -22,19 +22,9 @@ impl NoteService {
             collection
         }
     }
-    // note id 자동 생성?
     pub async fn insert_one(&self, mut new_note: Note) -> Result<InsertOneResult, Error> {
-        // let mut new_note = Note::new(
-        //     title, 
-        //     body, 
-        //     tags, 
-        //     author_id, 
-        // ).map_err(|err| Error::custom(err))?;
-
-        log!("(insert_one)inserting note {:?}", new_note);
-        
+        new_note.set_id(bson::oid::ObjectId::new().to_hex());
         new_note.set_last_modified(DateTime::now().to_string());
-        
         self.collection.insert_one(new_note).await
     }
     pub async fn find_one(&self, id: String) -> Result<Option<Note>, Error> {
@@ -44,7 +34,8 @@ impl NoteService {
         let projection = bson::doc! {
             "_id": 1,
             "title": 1,
-            "author": 1,
+            "author_id": 1,
+            "tags": 1,
             "last_modified": 1,
         };
         
@@ -62,8 +53,10 @@ impl NoteService {
         let note_items = self.collection.find(query)
             .with_options(options)
             .await?
-            .try_collect::<Vec<Note>>()
+            .try_collect()
             .await?;
+
+        log!("(find_items_by_tags)found note items: {:?}", note_items);
 
         Ok(note_items)
     }

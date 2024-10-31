@@ -1,16 +1,24 @@
-use leptos::ev::SubmitEvent;
-use leptos::prelude::*;
-use leptos::html;
+use leptos::{
+    ev::SubmitEvent, 
+    prelude::*, 
+    html
+};
+use leptos_router::hooks::use_query_map;
 use crate::{
     api, 
     models,
 };
 
-#[allow(unused_variables, unused_imports)]
 #[component]
 pub fn CreateNotePage() -> impl IntoView {
     use web_sys::window;
     let window = window().unwrap();
+
+    let query = use_query_map();
+    let tags = move || query
+        .get()
+        .get_all("tags")
+        .unwrap_or_else(|| vec![]);
 
     let title_ref: NodeRef<html::Input> = NodeRef::new();
     // let title_ref = create_node_ref::<html::Input>();
@@ -26,7 +34,15 @@ pub fn CreateNotePage() -> impl IntoView {
         log!("(CreateNotePage) inserting note with title: {}, body: {}, tags: {:?}, author_id: {:?}.", &title, &body, &tags, &author_id);
         
         async move {
-            api::insert_note(title, body, tags, author_id).await
+            let id = api::insert_note(title, body, tags, author_id).await;
+            match id {
+                Ok(id) => {
+                    log!("(CreateNotePage) inserted note with id: {:?}", id);
+                }
+                Err(err) => {
+                    log!("(CreateNotePage) error while inserting note: {:?}", err);
+                }
+            }
         }
     });
     
@@ -45,15 +61,26 @@ pub fn CreateNotePage() -> impl IntoView {
             return;
         }
 
-        let tags: Vec<String> = vec![];
         let author_id = "admin".to_string();
 
-        insert_note.dispatch((title, body, tags, author_id));
+        insert_note.dispatch((title, body, tags(), author_id));
 
         ()
     };
     
     view! {
+        <div class="tagbar">
+            <For each=tags key=|tag| tag.clone() children=move |tag: String| {
+                let tag0 = tag.clone();
+                view! {
+                    <span class="badge" on:click=move |ev| {
+                        ev.prevent_default();
+                        log!("deleting tag: {:?}", tag0.clone());
+                    }>{tag}</span>
+                }
+            } />
+        </div>
+
         <form class="note-container" on:submit=on_submit>
             <input type="text" placeholder="title" node_ref=title_ref/>
             <textarea class="note-body" node_ref=body_ref></textarea>

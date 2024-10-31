@@ -12,20 +12,20 @@ pub async fn search(tags: Vec<String>) -> Result<Vec<Note>, ServerFnError> {
         None => return Err(ServerFnError::ServerError("cannot connect to database".to_string()))
     };
 
-    // log!("(api/search)searching notes by tags {:?}", tags);
+    log!("(api/search)searching notes by tags {:?}", tags);
 
     let note_items = note_service
         .find_items_by_tags(tags)
         .await
-        .map_err(|err| ServerFnError::ServerError(format!("error while fetching note items: {:?}", err)));
+        .map_err(|err| ServerFnError::ServerError(err.to_string()));
 
     {
         match &note_items {
             Ok(note_items) => {
-                log!("(search)found note items: {:?}", note_items);
+                log!("(api/search)found note items: {:#?}", note_items);
             }
             Err(err) => {
-                log!("(search)error while fetching note items: {:?}", err);
+                log!("(api/search)error while fetching note items: {:#?}", err);
             }
         }
     }
@@ -42,26 +42,20 @@ pub async fn insert_note(
 ) -> Result<String, ServerFnError<String>> {
     use leptos::prelude::{log, use_context};
 
-    log!("(api/insert_note) entered");
-
-    // let note_service = match use_context::<DB>() {
-    //     Some(db) => db.note_service,
-    //     None => return Err(ServerFnError::ServerError("cannot connect to database".to_string()))
-    // };
     let note_service = use_context::<DB>()
         .map(|db| db.note_service)
         .ok_or(ServerFnError::ServerError("cannot connect to database".to_string()))?;
 
-    log!("(api/insert_note) db connected.");
-
     let new_note = Note::new(
+        None,
         title, 
         body, 
         tags, 
         author_id, 
+        vec![]
     ).map_err(|err| ServerFnError::ServerError(err))?;
 
-    log!("(api/insert_note) get new note: {:?}", new_note);
+    log!("(api/insert_note) got new note: {:?}", new_note);
 
     note_service
         .insert_one(new_note)

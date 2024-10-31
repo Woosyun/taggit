@@ -2,16 +2,27 @@ use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Note {
-    pub _id: Option<String>,
+    #[serde(rename = "_id")]
+    pub id: Option<String>,
     pub title: String,
-    pub body: String,
+    pub body: Option<String>,
     pub tags: Vec<String>,
     pub author_id: String,
     pub last_modified: String,
-    pub comments: Vec<Comment>
+    pub comments: Option<Vec<Comment>>
 }
+
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Comment {
+    pub id: String,
+    pub author: String,
+    pub body: String,
+    pub last_modified: String,
+}
+
+
 impl Note {
-    pub fn new(title: String, body: String, tags: Vec<String>, author_id: String) -> Result<Self, String> {
+    pub fn new(id: Option<String>, title: String, body: String, tags: Vec<String>, author_id: String, comments:Vec<Comment>) -> Result<Self, String> {
         if let Err(err) = Note::validate_title(&title.clone()) {
             return Err(err.to_string());
         }
@@ -20,14 +31,18 @@ impl Note {
         }
         
         Ok(Note {
-            _id: None,
+            id,
             title,
-            body,
+            body: Some(body),
             tags,
             author_id,
             last_modified: "0000-00-00".to_string(),
-            comments: vec![]
+            comments: Some(comments),
         })
+    }
+
+    pub fn set_id(&mut self, id: String) {
+        self.id = Some(id);
     }
 
     pub fn set_last_modified(&mut self, last_modified: String) {
@@ -50,13 +65,7 @@ impl Note {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct Comment {
-    pub id: String,
-    pub author: String,
-    pub body: String,
-    pub last_modified: String,
-}
+
 
 
 

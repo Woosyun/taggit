@@ -1,19 +1,15 @@
-#[allow(unused_imports)]
 use leptos::{html, prelude::*, ev};
-#[allow(unused_imports)]
 use leptos_router::{
     hooks::*,
-    components::Form
+    components::A,
 };
 use crate::{
     api, 
     models::Note,
 };
 
-#[allow(unused_variables)]
 #[component]
 pub fn HomePage() -> impl IntoView {
-    use leptos::logging::log;
     use web_sys::window;
 
     let query = use_query_map();
@@ -84,17 +80,25 @@ pub fn HomePage() -> impl IntoView {
         
         window().unwrap().location().set_search(&new_query).unwrap();
     };
+
+    // let url_for_new_note = move || format!("create/{}", query.get().to_query_string());
+    let url_for_new_note = move || {
+        let a = "create".to_string();
+        let b = query.get().to_query_string();
+
+        a+b.as_str()
+    };
     
     view! {
         <div class="topbar">
-            <a href="create">+</a>
+            <A href=url_for_new_note>+</A>
 
             <form on:submit=on_submit>
                 <input type="search" node_ref=input_ref/>
                 <input type="submit" value="search" />
             </form>
             
-            <a href="login">login</a>
+            <A href="login">login</A>
         </div>
 
         <div class="tagbar">
@@ -111,10 +115,10 @@ pub fn HomePage() -> impl IntoView {
         
         <Transition fallback=move || view! { <p>"loading notes"</p>}>
             <ul>
-                <For each=note_items key=|note| note._id.clone() children=move |note: Note| {
+                <For each=note_items key=|note| note.id.clone() children=move |note: Note| {
                     view! {
                         <li>
-                            <a href=format!("/edit?id={}", note._id.unwrap())>
+                            <a href=format!("/edit?id={}", note.id.unwrap())>
                                 <h2>{note.title}</h2>
                             </a>
                         </li>
