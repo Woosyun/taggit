@@ -25,6 +25,8 @@ web-sys = "0.3.70"
 mongodb = { version = "3.1.0", optional = true }
 futures = "0.3.31"
 dotenv = "0.15.0"
+cfg-if = "1.0.0"
+axum-macros = "0.4.2"
 
 [features]
 hydrate = ["leptos/hydrate"]

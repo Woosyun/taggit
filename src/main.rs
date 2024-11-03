@@ -1,18 +1,19 @@
+#![allow(unused)]
+
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() {
-    use axum::Router;
+    use axum::{routing::get, Router};
+    use axum::routing::post;
     use leptos::prelude::*;
-    use leptos_axum::{generate_route_list, LeptosRoutes};
-    use taggit::app::*;
-    use taggit::db;
+    use leptos_axum::{generate_route_list, LeptosRoutes, file_and_error_handler};
+    use taggit::models::app::leptos_routes_handler;
+    use taggit::{
+        app::*, 
+        db,
+        models::app::{server_fn_handler, AppState},
+    };
     use dotenv::dotenv;
-
-    // #[derive(Debug, Clone, )]
-    // pub struct AppState{
-    //     // pub leptos_options: LeptosOptions,
-    //     pub db: db::DB,
-    // }
 
     dotenv().ok();
 
@@ -26,28 +27,32 @@ async fn main() {
     let addr = leptos_options.site_addr;
     let routes = generate_route_list(App);
 
-    // let app_state = AppState {
-    //     db: db::DB::new().await.unwrap(),
-    // };
-    let db_state = db::DB::new().await.unwrap();
+    let app_state = AppState {
+        options: leptos_options,
+        db: db::DB::new().await.unwrap(),
+    };
+    // let db_state = db::DB::new().await.unwrap();
 
-    // build our application with a route
     let app = Router::new()
-        .leptos_routes_with_context(
-            &leptos_options,
-            routes,
-            {
-                let db_state = db_state.clone();
-                move || provide_context(db_state.clone())
-            },
-            {
-                let leptos_options = leptos_options.clone();
-                move || shell(leptos_options.clone())
-            }
-        )
-        // .leptos_routes(&leptos_options, routes, App)
-        .fallback(leptos_axum::file_and_error_handler(shell))
-        .with_state(leptos_options);
+        .route("api/*fn_name", post(server_fn_handler))
+        .leptos_routes_with_handler(routes, get(leptos_routes_handler))
+        .fallback(file_and_error_handler::<AppState, _>(shell))
+        .with_state(app_state);
+    // let app = Router::new()
+    //     .leptos_routes_with_context(
+    //         &leptos_options,
+    //         routes,
+    //         {
+    //             let db_state = db_state.clone();
+    //             move || provide_context(db_state.clone())
+    //         },
+    //         {
+    //             let leptos_options = leptos_options.clone();
+    //             move || shell(leptos_options.clone())
+    //         }
+    //     )
+    //     .fallback(file_and_error_handler(shell))
+    //     .with_state(leptos_options);
 
     let listener = tokio::net::TcpListener::bind(&addr).await.unwrap();
     log!("listening on http://{}", &addr);
