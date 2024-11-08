@@ -1,34 +1,49 @@
+#![allow(unused)]
+
+pub mod auth;
+
 use leptos::prelude::{ServerFnError, server};
 use super::models::Note;
-#[cfg(feature = "ssr")]
-use crate::db::DB;
+
+use cfg_if::cfg_if;
+cfg_if! {
+    if #[cfg(feature="ssr")] {
+        use crate::db::DB;
+        use crate::models::config::AppState;
+    }
+}
+
 
 #[server(Search, "/api")]
 pub async fn search(tags: Vec<String>) -> Result<Vec<Note>, ServerFnError> {
     use leptos::prelude::{log, use_context};
 
-    let note_service = match use_context::<DB>() {
-        Some(db) => db.note_service,
-        None => return Err(ServerFnError::ServerError("cannot connect to database".to_string()))
-    };
+    // let note_service = match use_context::<DB>() {
+    //     Some(db) => db.note_service,
+    //     None => return Err(ServerFnError::ServerError("cannot connect to database".to_string()))
+    // };
+    let note_service = use_context::<AppState>()
+        .unwrap()
+        .db
+        .note_service;
 
-    log!("(api/search)searching notes by tags {:?}", tags);
+    // log!("(api/search)searching notes by tags {:?}", tags);
 
     let note_items = note_service
         .find_items_by_tags(tags)
         .await
         .map_err(|err| ServerFnError::ServerError(err.to_string()));
 
-    {
-        match &note_items {
-            Ok(note_items) => {
-                log!("(api/search)found note items: {:#?}", note_items);
-            }
-            Err(err) => {
-                log!("(api/search)error while fetching note items: {:#?}", err);
-            }
-        }
-    }
+    // {
+    //     match &note_items {
+    //         Ok(note_items) => {
+    //             log!("(api/search)found note items: {:#?}", note_items);
+    //         }
+    //         Err(err) => {
+    //             log!("(api/search)error while fetching note items: {:#?}", err);
+    //         }
+    //     }
+    // }
 
     note_items
 }
@@ -42,9 +57,13 @@ pub async fn insert_note(
 ) -> Result<String, ServerFnError<String>> {
     use leptos::prelude::{log, use_context};
 
-    let note_service = use_context::<DB>()
-        .map(|db| db.note_service)
-        .ok_or(ServerFnError::ServerError("cannot connect to database".to_string()))?;
+    // let note_service = use_context::<DB>()
+    //     .map(|db| db.note_service)
+    //     .ok_or(ServerFnError::ServerError("cannot connect to database".to_string()))?;
+    let note_service = use_context::<AppState>()
+        .unwrap()
+        .db
+        .note_service;
 
     let new_note = Note::new(
         None,
@@ -69,10 +88,14 @@ pub async fn fetch_note_by_id(id: String) -> Result<Note, ServerFnError> {
     //check if the note exists
     use leptos::prelude::use_context;
     
-    let note_service = match use_context::<DB>() {
-        Some(db) => db.note_service,
-        None => return Err(ServerFnError::ServerError("cannot connect to database".to_string()))
-    };
+    // let note_service = match use_context::<DB>() {
+    //     Some(db) => db.note_service,
+    //     None => return Err(ServerFnError::ServerError("cannot connect to database".to_string()))
+    // };
+    let note_service = use_context::<AppState>()
+        .unwrap()
+        .db
+        .note_service;
 
     match note_service.find_one(id).await {
         Ok(note_option) => {

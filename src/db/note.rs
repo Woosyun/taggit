@@ -56,7 +56,7 @@ impl NoteService {
             .try_collect()
             .await?;
 
-        log!("(find_items_by_tags)found note items: {:?}", note_items);
+        // log!("(find_items_by_tags)found note items: {:?}", note_items);
 
         Ok(note_items)
     }

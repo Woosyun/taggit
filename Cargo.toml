@@ -27,6 +27,8 @@ futures = "0.3.31"
 dotenv = "0.15.0"
 cfg-if = "1.0.0"
 axum-macros = "0.4.2"
+jsonwebtoken = "=9.3.0"
+oauth2 = "4.4.2"
 
 [features]
 hydrate = ["leptos/hydrate"]

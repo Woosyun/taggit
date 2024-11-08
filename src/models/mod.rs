@@ -1,4 +1,14 @@
-pub mod app;
+use cfg_if::cfg_if;
+
+pub mod tag;
+
+cfg_if! {
+    if #[cfg(feature="ssr")] {
+        // pub mod app_handler;
+        pub mod auth;
+        pub mod config;
+    }
+}
 
 use serde::{Serialize, Deserialize};
 

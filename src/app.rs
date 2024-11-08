@@ -1,7 +1,9 @@
+#![allow(unused)]
+
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
-    components::{Route, Router, Routes},
+    components::{Route, Router, Routes, ProtectedRoute},
     StaticSegment,
 };
 use crate::pages::*;
@@ -37,9 +39,16 @@ pub fn App() -> impl IntoView {
         <Router>
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
-                    <Route path=StaticSegment("") view=home_page::HomePage/>
+                    <Route path=StaticSegment("/") view=home_page::HomePage/>
                     // <Route path=StaticSegment("edit") view=EditPage/>
-                    <Route path=StaticSegment("create") view=create_note_page::CreateNotePage/>
+                    // <Route path=StaticSegment("/create") view=create_note_page::CreateNotePage/>
+                    <ProtectedRoute 
+                        path=StaticSegment("create") 
+                        view=create_note_page::CreateNotePage
+                        condition=|| Some(false)
+                        redirect_path=|| "/login"
+                    />
+                    <Route path=StaticSegment("/login") view=login_page::LoginPage />
                 </Routes>
             </main>
         </Router>
