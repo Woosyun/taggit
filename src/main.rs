@@ -10,12 +10,22 @@ async fn main() {
     use taggit::{
         app::*, 
         db,
-        // models::app_handler::{server_fn_handler, AppState, leptos_routes_handler},
         models::{config},
+        api::auth::handle_auth_callback,
     };
+    use time::Duration;
+    use tower_sessions::{Expiry, MemoryStore, Session, SessionManagerLayer};
     use dotenv::dotenv;
-
+    
     dotenv().ok();
+
+    // let db_url = std::env::var("MONGODB_URI").expect("MONGODB_URI should exists");
+    // let client = Client::with_uri_str(database_url).await?;
+    // let session_store = MongoDBStore::new(client, "tower-sessions".to_string());
+    let session_store = MemoryStore::default();
+    let session_layer = SessionManagerLayer::new(session_store)
+        .with_secure(false)
+        .with_expiry(Expiry::OnInactivity(Duration::seconds(10)));
 
     // Setting get_configuration(None) means we'll be using cargo-leptos's env values
     // For deployment these variables are:
@@ -40,6 +50,7 @@ async fn main() {
     //     .fallback(file_and_error_handler::<AppState, _>(shell))
     //     .with_state(app_state);
     let app = Router::new()
+        .route("/api/auth/callback/google", get(handle_auth_callback))
         .leptos_routes_with_context(
             &leptos_options,
             routes,
@@ -54,6 +65,7 @@ async fn main() {
                 move || shell(leptos_options.clone())
             }
         )
+        .layer(session_layer)
         .fallback(file_and_error_handler::<LeptosOptions, _>(shell))
         .with_state(leptos_options);
 

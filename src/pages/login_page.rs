@@ -1,27 +1,49 @@
 #![allow(unused)]
 
+use crate::api::auth::try_login;
 use leptos::prelude::*;
-use leptos::task::spawn_local;
-use crate::api::auth::login;
+use leptos::ev;
 
 #[component]
 pub fn LoginPage() -> impl IntoView {
     use leptos::logging::log;
-    // let appstate = use_context::<AppState>();
-    // if !appstate.is_none() {
-    //     log!("if this message showed, that means appstate is appeared in client side?");
-    // }
+    use web_sys::window;
 
-    log!("call login()");
-    spawn_local(async move {
-        login("google".to_string())
-            .await
-        .unwrap_or_else(|e| log!("login return error: {e:#?}"));
+    // log!("call try_login()");
+    // spawn_local(async move {
+    //     try_login("google".to_string())
+    //         .await
+    //         .unwrap_or_else(|e| log!("try_login return error: {e:#?}"));
+    // });
+
+    // let login = |provider: String| async move {
+    //     try_login(provider).await.unwrap_or_else(|e| {
+    //         window()
+    //             .unwrap()
+    //             .alert_with_message(&e.to_string())
+    //             .unwrap()
+    //     })
+    // };
+    let login_action = Action::new(|provider: &String| {
+        let provider = provider.to_owned();
+        async move {
+            try_login(provider).await.unwrap_or_else(|e| {
+                window()
+                    .unwrap()
+                    .alert_with_message(&e.to_string())
+                    .unwrap()
+            })
+        }
     });
-    
+    let login = move |ev: ev::MouseEvent, provider: String| {
+        ev.prevent_default();
+        login_action.dispatch(provider);
+    };
+
     view! {
-        <h1>Login</h1>
-        <a href="/api/auth/login">google</a>
-        <a href="/">github</a>
+        <div>
+            <h1>Login</h1>
+            <button on:click=move |ev| login(ev, "google".to_string())>google</button>
+        </div>
     }
 }
