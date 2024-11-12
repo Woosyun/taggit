@@ -1,3 +1,5 @@
+use super::Note;
+
 use mongodb::{
     error::Error, 
     Collection, 
@@ -8,7 +10,6 @@ use mongodb::{
 };
 // use serde::{Serialize, Deserialize};
 use futures::stream::TryStreamExt;
-use crate::models::Note;
 use leptos::prelude::*;
 
 #[derive(Clone, Debug)]

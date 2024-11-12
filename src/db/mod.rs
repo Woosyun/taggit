@@ -1,8 +1,6 @@
 use mongodb::{error::Error, options::ClientOptions, Client};
-use crate::models::Note;
+use crate::note::{Note, NoteService};
 
-pub mod note;
-use note::NoteService;
 
 #[derive(Clone, Debug)]
 pub struct DB {

@@ -1,17 +1,3 @@
-#![allow(unused)]
-
-use axum_macros::FromRef;
-use std::env;
-use leptos::prelude::LeptosOptions;
-use crate::db;
-
-#[derive(Clone,FromRef)]
-pub struct AppState {
-    pub db: db::DB,
-    pub options: LeptosOptions,
-    pub config: Config,
-}
-
 #[derive(Clone)]
 pub struct Config {
     pub root_url: String,

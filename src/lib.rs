@@ -1,10 +1,8 @@
 pub mod app;
-// pub mod error_template;
-pub mod api;
-pub mod models;
-pub mod pages;
-// #[cfg(feature = "ssr")]
-// pub mod fileserv;
+pub mod note;
+pub mod user;
+// pub mod auth;
+
 #[cfg(feature = "ssr")]
 pub mod db;
 

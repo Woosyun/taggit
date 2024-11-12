@@ -1,12 +1,10 @@
-#![allow(unused)]
-
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes, ProtectedRoute},
     StaticSegment,
 };
-use crate::pages::*;
+use super::pages::*;
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
     view! {
@@ -54,49 +52,3 @@ pub fn App() -> impl IntoView {
         </Router>
     }
 }
-
-
-
-// #[derive(Params, PartialEq, Clone, Debug)]
-// struct ContactNoteQuery {
-//     id: String,
-// }
-
-// #[allow(unused_variables)]
-// #[component]
-// fn EditPage() -> impl IntoView {
-//     let query = use_query::<ContactNoteQuery>();
-//     let (editor_status, set_editor_status) = create_signal(models::EditorStatus::new());
-//     let read_only = move || editor_status.with(|status| status.is_read_only());
-//     // let note = create_resource(query, |query| async move {
-//     //     match query {
-//     //         Ok(query) => {
-//     //             let id = query.id;
-//     //             if id.is_empty() {
-//     //                 // create default note
-//     //                 Ok(models::Note::default())
-//     //             } else {
-//     //                 match api::fetch_note_by_id(id).await {
-//     //                     Ok(note) => Ok(note),
-//     //                     Err(err) => Err(err.to_string())
-//     //                 }
-//     //             }
-//     //         }
-//     //         Err(err) => Err(err.to_string())
-//     //     }
-//     // });
-
-//     //if note is not found, return 404
-    
-
-//     view! {
-//         <form class="note-container">
-//             <input type="text" placeholder="title" readonly=read_only />
-//             <textarea placeholder="body" readonly=read_only />
-//             <button type="submit">submit</button>
-//         </form>
-//         // <Transition fallback=>
-//         //     {move || note.get()}
-//         // </Transition>
-//     }
-// }

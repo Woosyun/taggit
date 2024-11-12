@@ -3,10 +3,7 @@ use leptos_router::{
     hooks::*,
     components::A,
 };
-use crate::{
-    api, 
-    models::Note,
-};
+use crate::note::Note;
 
 #[component]
 pub fn HomePage() -> impl IntoView {
@@ -25,7 +22,7 @@ pub fn HomePage() -> impl IntoView {
     );
     
     let note_items = Resource::new( tags, move |tags: Vec<String>| async move {
-        api::search(tags).await
+        search(tags).await
             .unwrap_or_else(|e| {
                 window().unwrap().alert_with_message("(HomePage) something is wrong while searching").unwrap();
                 window().unwrap().alert_with_message(&e.to_string()).unwrap();
@@ -126,5 +123,69 @@ pub fn HomePage() -> impl IntoView {
                 } />
             </ul>
         </Transition>
+    }
+}
+
+
+
+#[server(Search, "/api")]
+pub async fn search(tags: Vec<String>) -> Result<Vec<Note>, ServerFnError> {
+    use crate::app::AppState;
+    use leptos::prelude::use_context;
+
+    // let note_service = match use_context::<DB>() {
+    //     Some(db) => db.note_service,
+    //     None => return Err(ServerFnError::ServerError("cannot connect to database".to_string()))
+    // };
+    let note_service = use_context::<AppState>()
+        .unwrap()
+        .db
+        .note_service;
+
+    // log!("(api/search)searching notes by tags {:?}", tags);
+
+    let note_items = note_service
+        .find_items_by_tags(tags)
+        .await
+        .map_err(|err| ServerFnError::ServerError(err.to_string()));
+
+    // {
+    //     match &note_items {
+    //         Ok(note_items) => {
+    //             log!("(api/search)found note items: {:#?}", note_items);
+    //         }
+    //         Err(err) => {
+    //             log!("(api/search)error while fetching note items: {:#?}", err);
+    //         }
+    //     }
+    // }
+
+    note_items
+}
+
+
+#[server(FetchNoteById, "/api")]
+pub async fn fetch_note_by_id(id: String) -> Result<Note, ServerFnError> {
+    //check if the note exists
+    use leptos::prelude::use_context;
+    use crate::app::AppState;
+    
+    // let note_service = match use_context::<DB>() {
+    //     Some(db) => db.note_service,
+    //     None => return Err(ServerFnError::ServerError("cannot connect to database".to_string()))
+    // };
+    let note_service = use_context::<AppState>()
+        .unwrap()
+        .db
+        .note_service;
+
+    match note_service.find_one(id).await {
+        Ok(note_option) => {
+            match note_option {
+                Some(note) => Ok(note),
+                None => Err(ServerFnError::ServerError("note not found".to_string()))
+            }
+        },
+        Err(err) => Err(ServerFnError::ServerError(format!("error while fetching note: {:?}", err)))
     }
 }

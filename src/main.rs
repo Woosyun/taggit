@@ -8,10 +8,8 @@ async fn main() {
     use leptos::prelude::*;
     use leptos_axum::{generate_route_list, LeptosRoutes, file_and_error_handler};
     use taggit::{
-        app::*, 
+        app::*,
         db,
-        models::{config},
-        api::auth::handle_auth_callback,
     };
     use time::Duration;
     use tower_sessions::{Expiry, MemoryStore, Session, SessionManagerLayer};
@@ -37,10 +35,10 @@ async fn main() {
     let addr = leptos_options.site_addr;
     let routes = generate_route_list(App);
 
-    let appstate = config::AppState {
+    let appstate = AppState {
         options: leptos_options.clone(),
         db: db::DB::new().await.unwrap(),
-        config: config::Config::new(),
+        // config: config::Config::new(),
     };
     // let db = db::DB::new().await.unwrap();
 
@@ -50,7 +48,6 @@ async fn main() {
     //     .fallback(file_and_error_handler::<AppState, _>(shell))
     //     .with_state(app_state);
     let app = Router::new()
-        .route("/api/auth/callback/google", get(handle_auth_callback))
         .leptos_routes_with_context(
             &leptos_options,
             routes,

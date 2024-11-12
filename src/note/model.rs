@@ -1,14 +1,3 @@
-use cfg_if::cfg_if;
-
-pub mod tag;
-
-cfg_if! {
-    if #[cfg(feature="ssr")] {
-        // pub mod app_handler;
-        pub mod auth;
-        pub mod config;
-    }
-}
 
 use serde::{Serialize, Deserialize};
 
@@ -73,50 +62,6 @@ impl Note {
             return Err("body is empty!!")
         }
 
-        Ok(())
-    }
-}
-
-
-
-
-
-
-
-
-
-
-pub enum EditorStatus {
-    View,
-    Contribute,
-    Maintain
-}
-
-impl EditorStatus {
-    pub fn new() -> Self {
-        EditorStatus::View
-    }
-    
-    pub fn is_read_only(&self) -> bool {
-        match self {
-            EditorStatus::View => true,
-            _ => false
-        }
-    }
-
-    pub fn contribute(&self) -> Result<Self, &str> {
-        match self {
-            EditorStatus::View => Ok(EditorStatus::Contribute),
-            _ => Err("Cannot contribute")
-        }
-    }
-    pub fn maintain(&self) -> Result<Self, &str> {
-        match self {
-            EditorStatus::View => Ok(EditorStatus::Maintain),
-            _ => Err("Cannot maintain")
-        }
-    }
-    pub fn commit(&self) -> Result<(), &str> {
         Ok(())
     }
 }

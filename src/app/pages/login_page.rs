@@ -1,13 +1,12 @@
 #![allow(unused)]
 
-use crate::api::auth::try_login;
 use leptos::prelude::*;
 use leptos::ev;
+use leptos::logging::log;
+use web_sys::window;
 
 #[component]
 pub fn LoginPage() -> impl IntoView {
-    use leptos::logging::log;
-    use web_sys::window;
 
     // log!("call try_login()");
     // spawn_local(async move {
@@ -27,12 +26,7 @@ pub fn LoginPage() -> impl IntoView {
     let login_action = Action::new(|provider: &String| {
         let provider = provider.to_owned();
         async move {
-            try_login(provider).await.unwrap_or_else(|e| {
-                window()
-                    .unwrap()
-                    .alert_with_message(&e.to_string())
-                    .unwrap()
-            })
+            log!("click login button!!");
         }
     });
     let login = move |ev: ev::MouseEvent, provider: String| {
