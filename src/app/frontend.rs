@@ -18,16 +18,20 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
                 <MetaTags/>
             </head>
             <body>
-                <App/>
+                <Frontend/>
             </body>
         </html>
     }
 }
 
 #[component]
-pub fn App() -> impl IntoView {
+pub fn Frontend() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
+
+    // Defining a session_token signal using leptos_use::use_cookie to track the presence of the token that axum-login creates
+    // Defining an authenticated resource and a corresponding server function
+    // Setting a route condition that checks the result of authenticated
 
     view! {
         <Stylesheet id="leptos" href="pkg/taggit.css"/>
