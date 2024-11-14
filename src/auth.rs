@@ -2,6 +2,7 @@
 
 use async_trait::async_trait;
 use axum_login::{AuthUser, AuthnBackend, UserId};
+use mongodb::Database;
 use serde::{Deserialize, Serialize};
 use sha2::{Sha256, Digest};
 use crate::{
@@ -10,6 +11,12 @@ use crate::{
         User, 
         UserService
     },
+};
+use axum_login::AuthManagerLayerBuilder;
+use tower_sessions::{
+    ExpiredDeletion,
+    Expiry,
+    SessionManagerLayer,
 };
 
 #[derive(Debug, Clone)]
@@ -55,20 +62,28 @@ pub struct Credentials {
     password: String,
 }
 
+impl Credentials {
+    pub fn new(id: String, pw: String) -> Result<Self, String> {
+        Ok(Self {
+            user_id: id,
+            password: pw,
+        })
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct Backend {
     users: UserService,
 }
 
 impl Backend {
-    pub fn new(users: UserService) -> Self {
+    pub async fn new(db: &Database) -> Self {
         Self {
-            users
+            users: UserService::new(db),
         }
     }
 
     //TODO: implement register, find_one
-
 }
 
 #[async_trait]

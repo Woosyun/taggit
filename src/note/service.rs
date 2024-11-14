@@ -7,6 +7,7 @@ use mongodb::{
     bson,
     bson::DateTime,
     options::FindOptions,
+    Database,
 };
 // use serde::{Serialize, Deserialize};
 use futures::stream::TryStreamExt;
@@ -18,11 +19,20 @@ pub struct NoteService {
 }
 
 impl NoteService {
-    pub fn new(collection: Collection::<Note>) -> Self {
+    pub fn new(db: &Database) -> Self {
+        let note_col_name = std::env::var("MONGODB_NOTE_COLLECTION_NAME")
+            .expect("MONGODB_NOTE_COLLECTION_NAME must be set");
+        let collection = db.collection::<Note>(&note_col_name);
+
         Self {
             collection
         }
     }
+    // pub fn new(collection: Collection::<Note>) -> Self {
+    //     Self {
+    //         collection
+    //     }
+    // }
     pub async fn insert_one(&self, mut new_note: Note) -> Result<InsertOneResult, Error> {
         new_note.set_id(bson::oid::ObjectId::new().to_hex());
         new_note.set_last_modified(DateTime::now().to_string());

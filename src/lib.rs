@@ -1,10 +1,14 @@
 pub mod app;
 pub mod note;
 pub mod user;
-pub mod auth;
 
-#[cfg(feature = "ssr")]
-pub mod db;
+use cfg_if::cfg_if;
+cfg_if! {
+    if #[cfg(feature="ssr")] {
+        pub mod db;
+        pub mod auth;
+    }
+}
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]

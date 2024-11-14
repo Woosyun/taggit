@@ -1,10 +1,7 @@
 use super::User;
 
 use mongodb::{
-    error::Error, 
-    Collection, 
-    results::InsertOneResult,
-    bson,
+    bson, error::Error, results::InsertOneResult, Collection, Database
     // bson::DateTime,
     // options::FindOptions,
 };
@@ -18,11 +15,21 @@ pub struct UserService {
 }
 
 impl UserService {
-    pub fn new(collection: Collection::<User>) -> Self {
+    pub fn new(db: &Database) -> Self {
+        let user_col_name = std::env::var("MONGODB_USER_COLLECTION_NAME")
+            .expect("MONGODB_USER_COLLECTION_NAME must be set");
+        let collection = db.collection::<User>(&user_col_name);
+        
         Self {
             collection
         }
     }
+    
+    // pub fn new(collection: Collection::<User>) -> Self {
+    //     Self {
+    //         collection
+    //     }
+    // }
     pub async fn insert_one(&self, mut new_user: User) -> Result<InsertOneResult, Error> {
         new_user.set_id(bson::oid::ObjectId::new().to_hex());
         self.collection.insert_one(new_user).await
