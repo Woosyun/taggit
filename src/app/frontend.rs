@@ -1,9 +1,14 @@
 use leptos::prelude::*;
+use leptos::logging::log;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes, ProtectedRoute},
     StaticSegment,
 };
+use crate::user::PublicUserProfile;
+use leptos_use::use_cookie;
+use codee::string::FromToStringCodec;
+
 use super::pages::*;
 
 pub fn shell(options: LeptosOptions) -> impl IntoView {
@@ -32,6 +37,24 @@ pub fn Frontend() -> impl IntoView {
     // Defining a session_token signal using leptos_use::use_cookie to track the presence of the token that axum-login creates
     // Defining an authenticated resource and a corresponding server function
     // Setting a route condition that checks the result of authenticated
+    let (cookie, _) = use_cookie::<String, FromToStringCodec>("id");
+    let user_profile = Resource::new(cookie, |_| async move {
+        auth::authenticate().await
+    });
+    let user_profile = move || match user_profile.get() {
+        Some(re) => match re {
+            Ok(_) => true,
+            Err(e) => {
+                let err = e.to_string();
+                log!("no user: {err:#?}");
+                false
+            },
+        },
+        None => false,
+    };
+    provide_context(PublicUserProfile{authenticated: user_profile()});
+    let user_profile = move || Some(user_profile());
+
 
     view! {
         <Stylesheet id="leptos" href="pkg/taggit.css"/>
@@ -47,10 +70,11 @@ pub fn Frontend() -> impl IntoView {
                     <ProtectedRoute 
                         path=StaticSegment("create") 
                         view=create_note_page::CreateNotePage
-                        condition=|| Some(false)
+                        condition=user_profile
                         redirect_path=|| "/login"
                     />
-                    <Route path=StaticSegment("/login") view=login_page::LoginPage />
+                    <Route path=StaticSegment("/register") view=auth::RegisterPage />
+                    <Route path=StaticSegment("/login") view=auth::LoginPage />
                 </Routes>
             </main>
         </Router>

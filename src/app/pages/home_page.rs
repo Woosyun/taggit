@@ -1,9 +1,9 @@
-use leptos::{html, prelude::*, ev};
+use leptos::{html, prelude::*, ev, logging::log};
 use leptos_router::{
     hooks::*,
     components::A,
 };
-use crate::note::Note;
+use crate::{note::Note, user::PublicUserProfile};
 
 #[component]
 pub fn HomePage() -> impl IntoView {
@@ -21,7 +21,7 @@ pub fn HomePage() -> impl IntoView {
         }
     );
     
-    let note_items = Resource::new( tags, move |tags: Vec<String>| async move {
+    let note_items = Resource::new( tags, |tags: Vec<String>| async move {
         search(tags).await
             .unwrap_or_else(|e| {
                 window().unwrap().alert_with_message("(HomePage) something is wrong while searching").unwrap();
@@ -85,6 +85,14 @@ pub fn HomePage() -> impl IntoView {
 
         a+b.as_str()
     };
+
+    let user = use_context::<PublicUserProfile>().unwrap();
+    let authenticated = move || user.authenticated;
+    let auth_button = move || match authenticated() {
+        false => view! {<A href="/login">login</A>}.into_any(),
+        true => view! {<button>logout</button>}.into_any(),
+    };
+    //TODO: use <Show />
     
     view! {
         <div class="topbar">
@@ -95,7 +103,7 @@ pub fn HomePage() -> impl IntoView {
                 <input type="submit" value="search" />
             </form>
             
-            <A href="login">login</A>
+            {auth_button}
         </div>
 
         <div class="tagbar">

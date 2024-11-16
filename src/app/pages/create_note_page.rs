@@ -10,6 +10,7 @@ use crate::note::Note;
 pub fn CreateNotePage() -> impl IntoView {
     use web_sys::window;
     let window = window().unwrap();
+    use leptos::logging::log;
 
     let query = use_query_map();
     let tags = move || query
@@ -96,7 +97,8 @@ pub async fn insert_note(
     tags: Vec<String>, 
     author_id: String
 ) -> Result<String, ServerFnError<String>> {
-    use leptos::prelude::{log, use_context};
+    use leptos::prelude::use_context;
+    use leptos::logging::log;
     use crate::app::AppState;
 
     // let note_service = use_context::<DB>()

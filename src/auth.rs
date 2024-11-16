@@ -9,7 +9,7 @@ use crate::{
     db::DB, 
     user::{
         User, 
-        UserService
+        UserService,
     },
 };
 use axum_login::AuthManagerLayerBuilder;
@@ -21,13 +21,10 @@ use tower_sessions::{
 
 #[derive(Debug, Clone)]
 pub struct SessionUser {
-    user_name: String,
-    user_id: String,
-    password_hash: Vec<u8>,
+    pub user_name: String,
+    pub user_id: String,
+    pub password_hash: Vec<u8>,
 }
-
-
-
 impl SessionUser {
     pub fn hash_pw(pw: String) -> Vec<u8> {
         let mut hasher = Sha256::new();       // Create a SHA256 hasher instance
@@ -84,6 +81,19 @@ impl Backend {
     }
 
     //TODO: implement register, find_one
+    pub async fn register(&self, new_user: User) -> Result<(), String> {
+        let user = self.users.find_one_by_user_id(new_user.user_id.clone()).await
+            .map_err(|e| e.to_string())?;
+
+        if !user.is_none() {
+            return Err("you cannot use that user id!!".to_string());
+        }
+
+        self.users.insert_one(new_user).await
+            .map_err(|e| e.to_string())?;
+        
+        Ok(())
+    }
 }
 
 #[async_trait]
@@ -96,7 +106,7 @@ impl AuthnBackend for Backend {
         &self,
         Credentials { user_id, password }: Self::Credentials,
     ) -> Result<Option<Self::User>, Self::Error> {
-        let user: Option<SessionUser> = match self.users.find_one(user_id).await {
+        let user: Option<SessionUser> = match self.users.find_one_by_user_id(user_id).await {
             Ok(Some(user)) => if user.password == password {
                 Some(Self::User::from_user(user))
             } else {
@@ -112,7 +122,7 @@ impl AuthnBackend for Backend {
         &self,
         user_id: &UserId<Self>,
     ) -> Result<Option<Self::User>, Self::Error> {
-        let user = match self.users.find_one(user_id.clone()).await {
+        let user = match self.users.find_one_by_user_id(user_id.clone()).await {
             Ok(Some(user)) => Some(Self::User::from_user(user)),
             _ => None
         };

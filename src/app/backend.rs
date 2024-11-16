@@ -2,6 +2,7 @@
 
 use axum_macros::FromRef;
 use leptos::prelude::*;
+use leptos::logging::log;
 use leptos_axum::{generate_route_list, LeptosRoutes, file_and_error_handler};
 use crate::{
     db::DB,
