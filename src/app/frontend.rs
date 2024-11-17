@@ -3,8 +3,9 @@ use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes, ProtectedRoute},
     StaticSegment,
+    path,
 };
-use leptos_use::{use_cookie_with_options, UseCookieOptions};
+use leptos_use::use_cookie;
 use codee::string::FromToStringCodec;
 
 use super::pages::*;
@@ -38,13 +39,7 @@ pub fn Frontend() -> impl IntoView {
     // Defining a session_token signal using leptos_use::use_cookie to track the presence of the token that axum-login creates
     // Defining an authenticated resource and a corresponding server function
     // Setting a route condition that checks the result of authenticated
-    let (cookie, _) = use_cookie_with_options::<String, FromToStringCodec>(
-        "id",
-        UseCookieOptions::<String, _, _>::default()
-            .readonly(true)
-            .max_age(3000)
-            .default_value(None)
-    );
+    let (cookie, _) = use_cookie::<String, FromToStringCodec>("id");
     let authenticated = Resource::new(cookie, |_| async move {
         match auth::authenticate().await {
             Ok(_) => true,
@@ -78,6 +73,7 @@ pub fn Frontend() -> impl IntoView {
                     />
                     <Route path=StaticSegment("/register") view=auth::RegisterPage />
                     <Route path=StaticSegment("/login") view=auth::LoginPage />
+                    <Route path=path!("/view/note/:id") view=view::NoteViewPage />
                 </Routes>
             </main>
         </Router>

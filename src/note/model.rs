@@ -41,6 +41,17 @@ impl Note {
             comments: Some(comments),
         })
     }
+    pub fn default() -> Self {
+        Note {
+            id: None,
+            title: "".to_string(),
+            body: None,
+            tags: vec![],
+            author_id: "".to_string(),
+            last_modified: "".to_string(),
+            comments: None,
+        }
+    }
 
     pub fn set_id(&mut self, id: String) {
         self.id = Some(id);

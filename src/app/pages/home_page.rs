@@ -85,8 +85,10 @@ pub fn HomePage() -> impl IntoView {
 
         a+b.as_str()
     };
-
-
+    let url_for_note_view = move |note_id: &str| {
+        let target_url = "/view/note/".to_string();
+        target_url+note_id
+    };
     
     view! {
         <div class="topbar">
@@ -112,14 +114,15 @@ pub fn HomePage() -> impl IntoView {
             } />
         </div>
         
-        <Transition fallback=move || view! { <p>"loading notes"</p>}>
+        <Transition fallback=move || view! { <p>"loading notes..."</p>}>
             <ul>
                 <For each=note_items key=|note| note.id.clone() children=move |note: Note| {
+                    let id = note.id.unwrap();
                     view! {
                         <li>
-                            <a href=format!("/edit?id={}", note.id.unwrap())>
+                            <A href=move || url_for_note_view(&id.clone())>
                                 <h2>{note.title}</h2>
-                            </a>
+                            </A>
                         </li>
                     }
                 } />
@@ -162,31 +165,4 @@ pub async fn search(tags: Vec<String>) -> Result<Vec<Note>, ServerFnError> {
     // }
 
     note_items
-}
-
-
-#[server(FetchNoteById, "/api")]
-pub async fn fetch_note_by_id(id: String) -> Result<Note, ServerFnError> {
-    //check if the note exists
-    use leptos::prelude::use_context;
-    use crate::app::AppState;
-    
-    // let note_service = match use_context::<DB>() {
-    //     Some(db) => db.note_service,
-    //     None => return Err(ServerFnError::ServerError("cannot connect to database".to_string()))
-    // };
-    let note_service = use_context::<AppState>()
-        .unwrap()
-        .db
-        .note_service;
-
-    match note_service.find_one(id).await {
-        Ok(note_option) => {
-            match note_option {
-                Some(note) => Ok(note),
-                None => Err(ServerFnError::ServerError("note not found".to_string()))
-            }
-        },
-        Err(err) => Err(ServerFnError::ServerError(format!("error while fetching note: {:?}", err)))
-    }
 }

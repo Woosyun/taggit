@@ -57,10 +57,7 @@ pub async fn authenticate() -> Result<(), ServerFnError> {
     let (mut auth_session): (AuthSession<Backend>) = extract().await?;
 
     match auth_session.user {
-        Some(user) => {
-            dbg!(user.user_name);
-            Ok(())
-        },
+        Some(user) => Ok(()),
         None => Err(ServerFnError::ServerError("UNAUTHORIZED".to_string())),
     }
 }

@@ -38,8 +38,8 @@ impl NoteService {
         new_note.set_last_modified(DateTime::now().to_string());
         self.collection.insert_one(new_note).await
     }
-    pub async fn find_one(&self, id: String) -> Result<Option<Note>, Error> {
-        self.collection.find_one(bson::doc! { "id": id }).await
+    pub async fn find_one_by_id(&self, id: String) -> Result<Option<Note>, Error> {
+        self.collection.find_one(bson::doc! { "_id": id }).await
     }
     pub async fn find_items_by_tags(&self, tags: Vec<String>) -> Result<Vec<Note>, Error> {
         let projection = bson::doc! {
