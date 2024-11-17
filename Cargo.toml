@@ -55,6 +55,7 @@ ssr = [
     "dep:sha2",
     "dep:tower-sessions-mongodb-store",
     "leptos-use/ssr",
+    "leptos-use/axum",
 ]
 
 # Defines a size-optimized profile for the WASM bundle in release mode

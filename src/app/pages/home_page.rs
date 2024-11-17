@@ -3,7 +3,7 @@ use leptos_router::{
     hooks::*,
     components::A,
 };
-use crate::{note::Note, user::PublicUserProfile};
+use crate::{note::Note, app::AuthButton};
 
 #[component]
 pub fn HomePage() -> impl IntoView {
@@ -86,13 +86,7 @@ pub fn HomePage() -> impl IntoView {
         a+b.as_str()
     };
 
-    let user = use_context::<PublicUserProfile>().unwrap();
-    let authenticated = move || user.authenticated;
-    let auth_button = move || match authenticated() {
-        false => view! {<A href="/login">login</A>}.into_any(),
-        true => view! {<button>logout</button>}.into_any(),
-    };
-    //TODO: use <Show />
+
     
     view! {
         <div class="topbar">
@@ -103,7 +97,7 @@ pub fn HomePage() -> impl IntoView {
                 <input type="submit" value="search" />
             </form>
             
-            {auth_button}
+            {AuthButton}
         </div>
 
         <div class="tagbar">
@@ -133,7 +127,6 @@ pub fn HomePage() -> impl IntoView {
         </Transition>
     }
 }
-
 
 
 #[server(Search, "/api")]

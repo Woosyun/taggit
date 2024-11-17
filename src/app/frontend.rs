@@ -1,12 +1,10 @@
 use leptos::prelude::*;
-use leptos::logging::log;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
     components::{Route, Router, Routes, ProtectedRoute},
     StaticSegment,
 };
-use crate::user::PublicUserProfile;
-use leptos_use::use_cookie;
+use leptos_use::{use_cookie_with_options, UseCookieOptions};
 use codee::string::FromToStringCodec;
 
 use super::pages::*;
@@ -29,6 +27,9 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
     }
 }
 
+#[derive(Clone)]
+pub struct Authenticated(pub Resource<bool>);
+
 #[component]
 pub fn Frontend() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
@@ -37,23 +38,25 @@ pub fn Frontend() -> impl IntoView {
     // Defining a session_token signal using leptos_use::use_cookie to track the presence of the token that axum-login creates
     // Defining an authenticated resource and a corresponding server function
     // Setting a route condition that checks the result of authenticated
-    let (cookie, _) = use_cookie::<String, FromToStringCodec>("id");
-    let user_profile = Resource::new(cookie, |_| async move {
-        auth::authenticate().await
-    });
-    let user_profile = move || match user_profile.get() {
-        Some(re) => match re {
+    let (cookie, _) = use_cookie_with_options::<String, FromToStringCodec>(
+        "id",
+        UseCookieOptions::<String, _, _>::default()
+            .readonly(true)
+            .max_age(3000)
+            .default_value(None)
+    );
+    let authenticated = Resource::new(cookie, |_| async move {
+        match auth::authenticate().await {
             Ok(_) => true,
             Err(e) => {
-                let err = e.to_string();
-                log!("no user: {err:#?}");
+                dbg!(e);
                 false
-            },
-        },
-        None => false,
-    };
-    provide_context(PublicUserProfile{authenticated: user_profile()});
-    let user_profile = move || Some(user_profile());
+            }
+        }
+    });
+    // let authenticated = move || authenticated.get().expect("missing authentication info");
+    provide_context(Authenticated(authenticated));
+    let authenticated = move || authenticated.get().expect("missing authentication info");
 
 
     view! {
@@ -70,7 +73,7 @@ pub fn Frontend() -> impl IntoView {
                     <ProtectedRoute 
                         path=StaticSegment("create") 
                         view=create_note_page::CreateNotePage
-                        condition=user_profile
+                        condition=move || Some(authenticated())
                         redirect_path=|| "/login"
                     />
                     <Route path=StaticSegment("/register") view=auth::RegisterPage />

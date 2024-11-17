@@ -26,8 +26,3 @@ impl User {
         self.id = Some(new_id);
     }
 }
-
-#[derive(Clone, Debug)]
-pub struct PublicUserProfile {
-    pub authenticated: bool,
-}

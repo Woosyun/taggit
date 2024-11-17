@@ -2,8 +2,10 @@
 
 use leptos::prelude::*;
 use leptos::{logging::log, html::Input, ev};
+use leptos_router::components::A;
 use web_sys::{SubmitEvent, window};
 use crate::user::User;
+use crate::app::Authenticated;
 
 #[component]
 pub fn LoginPage() -> impl IntoView {
@@ -53,12 +55,12 @@ pub async fn authenticate() -> Result<(), ServerFnError> {
     use crate::auth::Backend;
 
     let (mut auth_session): (AuthSession<Backend>) = extract().await?;
-    let user = auth_session.user;
 
-    log!("(authenticate) user: {user:#?}");
-
-    match user {
-        Some(_) => Ok(()),
+    match auth_session.user {
+        Some(user) => {
+            dbg!(user.user_name);
+            Ok(())
+        },
         None => Err(ServerFnError::ServerError("UNAUTHORIZED".to_string())),
     }
 }
@@ -73,7 +75,7 @@ pub async fn login(id: String, password: String) -> Result<(), ServerFnError> {
     let (mut auth_session): (AuthSession<Backend>) = extract().await?;
 
     // make sure user logged out
-    let user = &auth_session.user;
+    let user = dbg!(&auth_session.user);
     if !user.is_none() {
         return Err(ServerFnError::ServerError("you have to logout to login!".to_string()));
     }
@@ -167,4 +169,29 @@ pub async fn register(user_id: String, password: String, user_name: String) -> R
     
     redirect("/");
     Ok(())
+}
+
+#[component]
+pub fn AuthButton() -> impl IntoView {
+    let authenticated = use_context::<Authenticated>().unwrap();
+    let authenticated = move || authenticated.0.get().expect("missing authentication info");
+    let logout_button = move || {
+        view! {
+            <button>logout</button>
+        }
+    };
+    let login_button = move || {
+        view! {
+            <A href="/login">login</A>
+        }
+    };
+    
+    view! {
+        <Show
+            when=authenticated
+            fallback=login_button
+        >
+            {logout_button}
+        </Show>
+    }
 }
