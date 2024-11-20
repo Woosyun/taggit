@@ -138,14 +138,6 @@ pub async fn register(user_id: String, password: String, user_name: String) -> R
 
 #[component]
 pub fn AuthButton() -> impl IntoView {
-    // use leptos_use::use_cookie;
-    // use codee::string::FromToStringCodec;
-    // use crate::app::authenticate;
-    
-    // let (cookie, _) = use_cookie::<String, FromToStringCodec>("id");
-    // let authenticated = Resource::new(cookie, |_| async move {
-    //     authenticate().await.is_ok()
-    // });
     let authenticated = use_context::<Resource<bool>>().expect("missing authenticated value");
 
     let logout = Action::new(|_| {

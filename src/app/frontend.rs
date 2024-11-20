@@ -5,8 +5,6 @@ use leptos_router::{
     StaticSegment,
     path,
 };
-use leptos_use::use_cookie;
-use codee::string::FromToStringCodec;
 
 use super::pages::*;
 
@@ -35,8 +33,6 @@ pub async fn authenticate() -> Result<(), ServerFnError> {
     use crate::auth::Backend;
 
     let auth_session: AuthSession<Backend> = extract().await?;
-
-    
     
     match auth_session.user {
         Some(user) => {
@@ -52,8 +48,7 @@ pub fn Frontend() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
 
-    let (cookie, _) = use_cookie::<String, FromToStringCodec>("id");
-    let authenticated = Resource::new(cookie, |_| async move {
+    let authenticated = Resource::new(|| (), |_| async move {
         authenticate().await.is_ok()
     });
     provide_context(authenticated);
@@ -74,7 +69,7 @@ pub fn Frontend() -> impl IntoView {
                     />
                     <Route path=StaticSegment("/register") view=auth::RegisterPage />
                     <Route path=StaticSegment("/login") view=auth::LoginPage />
-                    <Route path=path!("/view/note/:id") view=view::NoteViewPage />
+                    <Route path=path!("/view/note/:id") view=view_note_page::NoteViewPage />
                 </Routes>
             </main>
         </Router>

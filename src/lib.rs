@@ -1,6 +1,7 @@
 pub mod app;
 pub mod note;
 pub mod user;
+// pub mod comment;
 
 use cfg_if::cfg_if;
 cfg_if! {

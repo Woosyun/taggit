@@ -25,7 +25,10 @@ pub fn NoteViewPage() -> impl IntoView {
         .map(|note| {
             note.map(|note| {
                 view! {
-                    <p>{note.author_id}</p>
+                    <p>"note id" {note.id}</p>
+                    <p>"note author id" {note.author_id}</p>
+                    <p>"note tags" {note.tags}</p>
+                    <p>"last modified" {note.last_modified}</p>
                     <h1>{note.title}</h1>
                     <div>{note.body}</div>
                 }

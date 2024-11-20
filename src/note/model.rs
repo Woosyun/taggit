@@ -1,4 +1,3 @@
-
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -9,21 +8,11 @@ pub struct Note {
     pub body: Option<String>,
     pub tags: Vec<String>,
     pub author_id: String,
-    pub last_modified: String,
-    pub comments: Option<Vec<Comment>>
+    pub last_modified: Option<String>,
 }
-
-#[derive(Serialize, Deserialize, Clone, Debug)]
-pub struct Comment {
-    pub id: String,
-    pub author: String,
-    pub body: String,
-    pub last_modified: String,
-}
-
 
 impl Note {
-    pub fn new(id: Option<String>, title: String, body: String, tags: Vec<String>, author_id: String, comments:Vec<Comment>) -> Result<Self, String> {
+    pub fn new(title: String, body: String, tags: Vec<String>, author_id: String) -> Result<Self, String> {
         if let Err(err) = Note::validate_title(&title.clone()) {
             return Err(err.to_string());
         }
@@ -31,14 +20,13 @@ impl Note {
             return Err(err.to_string());
         }
         
-        Ok(Note {
-            id,
+        Ok(Self {
+            id: None,
             title,
             body: Some(body),
             tags,
             author_id,
-            last_modified: "0000-00-00".to_string(),
-            comments: Some(comments),
+            last_modified: None,
         })
     }
     pub fn default() -> Self {
@@ -48,8 +36,7 @@ impl Note {
             body: None,
             tags: vec![],
             author_id: "".to_string(),
-            last_modified: "".to_string(),
-            comments: None,
+            last_modified: None,
         }
     }
 
@@ -58,9 +45,8 @@ impl Note {
     }
 
     pub fn set_last_modified(&mut self, last_modified: String) {
-        self.last_modified = last_modified;
+        self.last_modified = Some(last_modified);
     }
-
     pub fn validate_title(title: &str) -> Result<(), &str> {
         if title.is_empty() {
             return Err("title is empty!!")

@@ -28,16 +28,12 @@ impl NoteService {
             collection
         }
     }
-    // pub fn new(collection: Collection::<Note>) -> Self {
-    //     Self {
-    //         collection
-    //     }
-    // }
     pub async fn insert_one(&self, mut new_note: Note) -> Result<InsertOneResult, Error> {
         new_note.set_id(bson::oid::ObjectId::new().to_hex());
         new_note.set_last_modified(DateTime::now().to_string());
         self.collection.insert_one(new_note).await
     }
+    
     pub async fn find_one_by_id(&self, id: String) -> Result<Option<Note>, Error> {
         self.collection.find_one(bson::doc! { "_id": id }).await
     }
@@ -60,15 +56,15 @@ impl NoteService {
         } else {
             bson::doc! {"tags": { "$all": tags}}
         };
-        
-        let note_items = self.collection.find(query)
+
+        let items = self.collection.find(query)
             .with_options(options)
-            .await?
+            .await
+            .map_err(|e| dbg!(e))?
             .try_collect()
-            .await?;
+            .await
+            .map_err(|e| dbg!(e))?;
 
-        // log!("(find_items_by_tags)found note items: {:?}", note_items);
-
-        Ok(note_items)
+        Ok(items)
     }
 }

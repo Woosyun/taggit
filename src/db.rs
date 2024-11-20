@@ -1,10 +1,12 @@
 use mongodb::{error::Error, options::ClientOptions, Client, Database};
 use crate::note::NoteService;
+// use crate::comment::CommentService;
 
 
 #[derive(Clone, Debug)]
 pub struct DB {
     pub note_service: NoteService,
+    // pub comment_service: CommentService,
 }
 
 impl DB {
@@ -31,6 +33,7 @@ impl DB {
 
         Ok(Self {
             note_service: NoteService::new(database),
+            // comment_service: CommentService::new(database),
         })
     }
 }

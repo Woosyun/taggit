@@ -19,7 +19,7 @@ pub fn HomePage() -> impl IntoView {
                 .filter(|s| !s.is_empty())
                 .collect()
         })
-        .unwrap_or_else(|| vec![]);
+        .unwrap_or_default();
 
     Effect::new(
         move |_| {
@@ -29,16 +29,12 @@ pub fn HomePage() -> impl IntoView {
     
     let note_items = Resource::new( tags, |tags: Vec<String>| async move {
         search(tags).await
-            .unwrap_or_else(|e| {
-                dbg!(e);
-                // window().unwrap().alert_with_message(&e.to_string()).unwrap();
-                vec![]
-            })
+            .unwrap_or_default()
     });
     let note_items = move || {
         note_items
             .get()
-            .unwrap_or_else(|| vec![])
+            .unwrap_or_default()
     };
 
     let input_ref: NodeRef<html::Input> = NodeRef::new();
@@ -132,8 +128,7 @@ pub fn HomePage() -> impl IntoView {
     }
 }
 
-
-#[server(Search, "/api")]
+#[server(Search)]
 pub async fn search(tags: Vec<String>) -> Result<Vec<Note>, ServerFnError> {
     use crate::app::AppState;
     use leptos::prelude::use_context;
@@ -146,7 +141,7 @@ pub async fn search(tags: Vec<String>) -> Result<Vec<Note>, ServerFnError> {
     let note_items = note_service
         .find_items_by_tags(tags)
         .await
-        .map_err(|err| ServerFnError::ServerError(err.to_string()));
+        .map_err(ServerFnError::new);
 
     note_items
 }

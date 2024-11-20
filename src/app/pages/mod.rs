@@ -3,5 +3,5 @@ pub mod create_note_page;
 pub mod auth;
 pub use auth::*;
 
-pub mod view;
-pub use view::*;
+pub mod view_note_page;
+pub use view_note_page::*;

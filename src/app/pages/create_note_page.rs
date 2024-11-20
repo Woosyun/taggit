@@ -1,72 +1,36 @@
 use leptos::{
-    ev::SubmitEvent, 
     prelude::*, 
     html
 };
 use leptos_router::hooks::use_query_map;
-use crate::note::Note;
 
 #[component]
 pub fn CreateNotePage() -> impl IntoView {
-    use web_sys::window;
-    let window = window().unwrap();
     use leptos::logging::log;
+    use web_sys::window;
 
     let query = use_query_map();
     let tags = move || query
         .get()
         .get_all("tags")
-        .unwrap_or_else(|| vec![]);
-
+        .unwrap_or_default();
     let title_ref: NodeRef<html::Input> = NodeRef::new();
-    // let title_ref = create_node_ref::<html::Input>();
     let body_ref: NodeRef<html::Textarea> = NodeRef::new();
-    // let body_ref = create_node_ref::<html::Textarea>();
 
-    let insert_note = Action::new(|input: &(String, String, Vec<String>, String)| {
-        let title = input.0.to_owned();
-        let body = input.1.to_owned();
-        let tags = input.2.to_owned();
-        let author_id = input.3.to_owned();
+    let create_note = Action::new(move |&()| {
+        let title = title_ref.get().expect("title_ref to exist").value();
+        let body = body_ref.get().expect("body_ref to exist").value();
+        let tags = tags();
 
-        log!("(CreateNotePage) inserting note with title: {}, body: {}, tags: {:?}, author_id: {:?}.", &title, &body, &tags, &author_id);
-        
         async move {
-            let id = insert_note(title, body, tags, author_id).await;
-            match id {
-                Ok(id) => {
-                    log!("(CreateNotePage) inserted note with id: {:?}", id);
-                }
-                Err(err) => {
-                    log!("(CreateNotePage) error while inserting note: {:?}", err);
-                }
+            insert_note(title, body, Some(tags)).await
+                .map_err(|e| {
+                    let f = format!("error while creating note: {e:?}");
+                    window().unwrap().alert_with_message(&f).unwrap();
+                })
             }
         }
-    });
-    
-    let on_submit = move |ev: SubmitEvent| {
-        ev.prevent_default();
-
-        //TODO: pass validation to server??
-        
-        let title = title_ref.get().expect("title_ref to exist").value();
-        if let Err(err) = Note::validate_title(&title) {
-            window.alert_with_message(err).unwrap();
-            return;
-        }
-
-        let body = body_ref.get().expect("body_ref to exist").value();
-        if let Err(err) = Note::validate_body(&body) {
-            window.alert_with_message(err).unwrap();
-            return;
-        }
-
-        let author_id = "admin".to_string();
-
-        insert_note.dispatch((title, body, tags(), author_id));
-
-        ()
-    };
+    );
     
     view! {
         <div class="tagbar">
@@ -81,7 +45,13 @@ pub fn CreateNotePage() -> impl IntoView {
             } />
         </div>
 
-        <form class="note-container" on:submit=on_submit>
+        <form 
+            class="note-container" 
+            on:submit=move |ev| {
+                ev.prevent_default();
+                create_note.dispatch(());
+            }
+        >
             <input type="text" placeholder="title" node_ref=title_ref/>
             <textarea class="note-body" node_ref=body_ref></textarea>
             <button type="submit">submit</button>
@@ -90,39 +60,49 @@ pub fn CreateNotePage() -> impl IntoView {
 }
 
 
-#[server(InsertNote, "/api")]
+#[server(InsertNote)]
 pub async fn insert_note(
     title: String, 
     body: String, 
-    tags: Vec<String>, 
-    author_id: String
-) -> Result<String, ServerFnError<String>> {
+    tags: Option<Vec<String>>,
+) -> Result<String, ServerFnError> {
     use leptos::prelude::use_context;
-    use leptos::logging::log;
-    use crate::app::AppState;
+    use leptos_axum::{extract, redirect};
+    use axum_login::AuthSession;
+    use crate::{
+        app::AppState, 
+        auth::Backend,
+        note::Note,
+    };
 
-    // let note_service = use_context::<DB>()
-    //     .map(|db| db.note_service)
-    //     .ok_or(ServerFnError::ServerError("cannot connect to database".to_string()))?;
+    let tags = tags.unwrap_or_default();
+
+    let auth_session: AuthSession<Backend> = extract().await?;
     let note_service = use_context::<AppState>()
         .unwrap()
         .db
         .note_service;
 
+    let user_id = auth_session.user
+        .map(|user| user.user_id)
+        .ok_or(ServerFnError::new("Unauthorized"))?;
+
     let new_note = Note::new(
-        None,
         title, 
         body, 
         tags, 
-        author_id, 
-        vec![]
-    ).map_err(|err| ServerFnError::ServerError(err))?;
-
-    log!("(api/insert_note) got new note: {:?}", new_note);
+        user_id,
+    )
+    .map_err(|e| dbg!(e))
+    .map_err(ServerFnError::new)?;
 
     note_service
         .insert_one(new_note)
         .await
-        .map_err(|err| ServerFnError::ServerError(format!("error while inserting note: {:?}", err)))
-        .map(|insert_one_result| insert_one_result.inserted_id.to_string())
+        .map_err(|e| dbg!(e))
+        .map_err(ServerFnError::new)
+        .map(|insert_one_result| {
+            redirect("/");
+            insert_one_result.inserted_id.to_string()
+        })
 }
