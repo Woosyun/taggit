@@ -28,47 +28,48 @@ pub fn shell(options: LeptosOptions) -> impl IntoView {
     }
 }
 
-#[derive(Clone)]
-pub struct Authenticated(pub Resource<bool>);
+#[server(Authenticate)]
+pub async fn authenticate() -> Result<(), ServerFnError> {
+    use leptos_axum::extract;
+    use axum_login::AuthSession;
+    use crate::auth::Backend;
+
+    let auth_session: AuthSession<Backend> = extract().await?;
+
+    
+    
+    match auth_session.user {
+        Some(user) => {
+            dbg!(user.user_name);
+            Ok(())
+        },
+        None => Err(ServerFnError::ServerError("UNAUTHORIZED".to_string())),
+    }
+}
 
 #[component]
 pub fn Frontend() -> impl IntoView {
     // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
 
-    // Defining a session_token signal using leptos_use::use_cookie to track the presence of the token that axum-login creates
-    // Defining an authenticated resource and a corresponding server function
-    // Setting a route condition that checks the result of authenticated
     let (cookie, _) = use_cookie::<String, FromToStringCodec>("id");
     let authenticated = Resource::new(cookie, |_| async move {
-        match auth::authenticate().await {
-            Ok(_) => true,
-            Err(e) => {
-                dbg!(e);
-                false
-            }
-        }
+        authenticate().await.is_ok()
     });
-    // let authenticated = move || authenticated.get().expect("missing authentication info");
-    provide_context(Authenticated(authenticated));
-    let authenticated = move || authenticated.get().expect("missing authentication info");
-
+    provide_context(authenticated);
 
     view! {
         <Stylesheet id="leptos" href="pkg/taggit.css"/>
-        // <Stylesheet id="leptos" href="pkg/taildwind.css"/>
         <Title text="Welcome to Leptos"/>
 
         <Router>
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
                     <Route path=StaticSegment("/") view=home_page::HomePage/>
-                    // <Route path=StaticSegment("edit") view=EditPage/>
-                    // <Route path=StaticSegment("/create") view=create_note_page::CreateNotePage/>
                     <ProtectedRoute 
                         path=StaticSegment("create") 
                         view=create_note_page::CreateNotePage
-                        condition=move || Some(authenticated())
+                        condition=move || authenticated.get()
                         redirect_path=|| "/login"
                     />
                     <Route path=StaticSegment("/register") view=auth::RegisterPage />

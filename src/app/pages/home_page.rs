@@ -13,6 +13,12 @@ pub fn HomePage() -> impl IntoView {
     let tags = move || query
         .get()
         .get_all("tags")
+        .map(|tags| {
+            tags
+                .into_iter()
+                .filter(|s| !s.is_empty())
+                .collect()
+        })
         .unwrap_or_else(|| vec![]);
 
     Effect::new(
@@ -24,8 +30,8 @@ pub fn HomePage() -> impl IntoView {
     let note_items = Resource::new( tags, |tags: Vec<String>| async move {
         search(tags).await
             .unwrap_or_else(|e| {
-                window().unwrap().alert_with_message("(HomePage) something is wrong while searching").unwrap();
-                window().unwrap().alert_with_message(&e.to_string()).unwrap();
+                dbg!(e);
+                // window().unwrap().alert_with_message(&e.to_string()).unwrap();
                 vec![]
             })
     });
@@ -36,7 +42,7 @@ pub fn HomePage() -> impl IntoView {
     };
 
     let input_ref: NodeRef<html::Input> = NodeRef::new();
-    let on_submit = move |ev: ev::SubmitEvent| {
+    let add_tag = move |ev: ev::SubmitEvent| {
         ev.prevent_default();
 
         let input = input_ref.get().expect("input ref to exists").value();
@@ -52,8 +58,6 @@ pub fn HomePage() -> impl IntoView {
         new_query.insert("tags", input);
         let new_query = new_query.to_query_string();
 
-        log!("new query: {}", new_query);
-        
         window().unwrap().location().set_search(&new_query).unwrap();
     };
     let delete_tag = move |tag: String| {
@@ -70,10 +74,7 @@ pub fn HomePage() -> impl IntoView {
         for tag in new_tags {
             new_query.insert("tags", tag);
         }
-        
         let new_query = new_query.to_query_string();
-
-        log!("new query: {}", new_query);
         
         window().unwrap().location().set_search(&new_query).unwrap();
     };
@@ -94,7 +95,7 @@ pub fn HomePage() -> impl IntoView {
         <div class="topbar">
             <A href=url_for_new_note>+</A>
 
-            <form on:submit=on_submit>
+            <form on:submit=add_tag>
                 <input type="search" node_ref=input_ref/>
                 <input type="submit" value="search" />
             </form>
@@ -137,32 +138,15 @@ pub async fn search(tags: Vec<String>) -> Result<Vec<Note>, ServerFnError> {
     use crate::app::AppState;
     use leptos::prelude::use_context;
 
-    // let note_service = match use_context::<DB>() {
-    //     Some(db) => db.note_service,
-    //     None => return Err(ServerFnError::ServerError("cannot connect to database".to_string()))
-    // };
     let note_service = use_context::<AppState>()
         .unwrap()
         .db
         .note_service;
 
-    // log!("(api/search)searching notes by tags {:?}", tags);
-
     let note_items = note_service
         .find_items_by_tags(tags)
         .await
         .map_err(|err| ServerFnError::ServerError(err.to_string()));
-
-    // {
-    //     match &note_items {
-    //         Ok(note_items) => {
-    //             log!("(api/search)found note items: {:#?}", note_items);
-    //         }
-    //         Err(err) => {
-    //             log!("(api/search)error while fetching note items: {:#?}", err);
-    //         }
-    //     }
-    // }
 
     note_items
 }

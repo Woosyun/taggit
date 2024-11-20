@@ -1,18 +1,14 @@
-#![allow(unused)]
-
 use leptos::prelude::*;
-use leptos::{logging::log, html::Input, ev};
+use leptos::html::Input;
 use leptos_router::components::A;
 use web_sys::{SubmitEvent, window};
-use crate::user::User;
-use crate::app::Authenticated;
 
 #[component]
 pub fn LoginPage() -> impl IntoView {
     let id_ref: NodeRef<Input> = NodeRef::new();
     let pw_ref: NodeRef<Input> = NodeRef::new();
 
-    let login = Action::new(move |input: &()| {
+    let login = Action::new(move |_| {
         let id = id_ref.get().expect("id_ref missed!").value();
         let pw = pw_ref.get().expect("pw_ref missed!").value();
         // let id = input.0.clone();
@@ -21,7 +17,7 @@ pub fn LoginPage() -> impl IntoView {
         async move {
             login(id, pw).await
                 .map_err(|e| {
-                    window().unwrap().alert_with_message(&e.to_string());
+                    let _ = window().unwrap().alert_with_message(&e.to_string());
                     e
                 })
         }
@@ -47,32 +43,16 @@ pub fn LoginPage() -> impl IntoView {
     }
 }
 
-#[server(Authenticate)]
-pub async fn authenticate() -> Result<(), ServerFnError> {
-    use leptos::logging::log;
-    use leptos_axum::extract;
-    use axum_login::AuthSession;
-    use crate::auth::Backend;
-
-    let (mut auth_session): (AuthSession<Backend>) = extract().await?;
-
-    match auth_session.user {
-        Some(user) => Ok(()),
-        None => Err(ServerFnError::ServerError("UNAUTHORIZED".to_string())),
-    }
-}
-
 #[server(Login)]
 pub async fn login(id: String, password: String) -> Result<(), ServerFnError> {
     use leptos_axum::{extract, redirect};
     use axum_login::AuthSession;
     use crate::auth::{Backend, Credentials};
-    use leptos::logging::log;
 
-    let (mut auth_session): (AuthSession<Backend>) = extract().await?;
+    let mut auth_session: AuthSession<Backend> = extract().await?;
 
     // make sure user logged out
-    let user = dbg!(&auth_session.user);
+    let user = &auth_session.user;
     if !user.is_none() {
         return Err(ServerFnError::ServerError("you have to logout to login!".to_string()));
     }
@@ -93,19 +73,6 @@ pub async fn login(id: String, password: String) -> Result<(), ServerFnError> {
     Ok(())
 }
 
-#[server(Logout)] 
-pub async fn logout() -> Result<(), ServerFnError> {
-    use axum_login::AuthSession;
-    use leptos_axum::extract;
-    use crate::auth::Backend;
-
-    let (mut auth_session): (AuthSession<Backend>) = extract().await?;
-
-    auth_session.logout().await.map_err(ServerFnError::new)?;
-    
-    Ok(())
-}
-
 #[component]
 pub fn RegisterPage() -> impl IntoView {
     use web_sys::window;
@@ -114,7 +81,7 @@ pub fn RegisterPage() -> impl IntoView {
     let pw_ref: NodeRef<Input> = NodeRef::new();
     let name_ref: NodeRef<Input> = NodeRef::new();
 
-    let register = Action::new(move |input: &()| {
+    let register = Action::new(move |_| {
         let id = id_ref.get().expect("missing id_ref").value();
         let pw = pw_ref.get().expect("missing pw_ref").value();
         let name = name_ref.get().expect("missing name_ref").value();
@@ -122,7 +89,7 @@ pub fn RegisterPage() -> impl IntoView {
         async move {
             register(id, pw, name).await
                 .map_err(|e| {
-                    window().unwrap().alert_with_message(&e.to_string());
+                    let _ = window().unwrap().alert_with_message(&e.to_string());
                     e
                 })
         }
@@ -156,10 +123,11 @@ pub async fn register(user_id: String, password: String, user_name: String) -> R
     use axum_login::AuthSession;
     use leptos_axum::{extract, redirect};
     use crate::auth::Backend;
+    use crate::user::User;
 
     let user = User::new(user_id, password, user_name);
     
-    let (mut auth_session): (AuthSession<Backend>) = extract().await?;
+    let auth_session: AuthSession<Backend> = extract().await?;
     let backend = auth_session.backend;
     backend.register(user).await
         .map_err(ServerFnError::new)?;
@@ -170,11 +138,24 @@ pub async fn register(user_id: String, password: String, user_name: String) -> R
 
 #[component]
 pub fn AuthButton() -> impl IntoView {
-    let authenticated = use_context::<Authenticated>().unwrap();
-    let authenticated = move || authenticated.0.get().expect("missing authentication info");
+    // use leptos_use::use_cookie;
+    // use codee::string::FromToStringCodec;
+    // use crate::app::authenticate;
+    
+    // let (cookie, _) = use_cookie::<String, FromToStringCodec>("id");
+    // let authenticated = Resource::new(cookie, |_| async move {
+    //     authenticate().await.is_ok()
+    // });
+    let authenticated = use_context::<Resource<bool>>().expect("missing authenticated value");
+
+    let logout = Action::new(|_| {
+        async move {
+            logout().await
+        }
+    });
     let logout_button = move || {
         view! {
-            <button>logout</button>
+            <button on:click=move |_| { logout.dispatch(()); }>logout</button>
         }
     };
     let login_button = move || {
@@ -182,13 +163,37 @@ pub fn AuthButton() -> impl IntoView {
             <A href="/login">login</A>
         }
     };
+    let auth_button = move |authenticated: bool| {
+        view! {
+            <Show
+                when=move || authenticated
+                fallback=login_button
+            >
+                {logout_button}
+            </Show>
+        }
+    };
+    
     
     view! {
-        <Show
-            when=authenticated
-            fallback=login_button
-        >
-            {logout_button}
-        </Show>
+        <Suspense fallback=move || view! {<span>"..."</span>}>
+            {move || authenticated.get().map(auth_button)}
+        </Suspense>
     }
+}
+
+#[server(Logout)] 
+pub async fn logout() -> Result<(), ServerFnError> {
+    use axum_login::AuthSession;
+    use leptos_axum::extract;
+    use crate::auth::Backend;
+
+    let mut auth_session: AuthSession<Backend> = extract().await?;
+
+    auth_session.logout().await.map_err(ServerFnError::new)?;
+
+    let log = format!("maybe logout worked?");
+    dbg!(log);
+    
+    Ok(())
 }
