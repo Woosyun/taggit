@@ -4,8 +4,6 @@ mod pages;
 pub use frontend::*;
 pub use pages::*;
 
-pub mod comment;
-
 use cfg_if::cfg_if;
 cfg_if! {
     if #[cfg(feature="ssr")] {

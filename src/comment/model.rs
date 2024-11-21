@@ -3,21 +3,21 @@ use serde::{Serialize, Deserialize};
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct Comment {
     #[serde(rename = "_id")]
-    id: Option<String>,
-    author_id: String,
-    body: String,
-    last_modified: String,
-    target_id: String,
-    target_position: Option<String>,
+    pub id: Option<String>,
+    pub author_id: String,
+    pub body: String,
+    pub last_modified: Option<String>,
+    pub target_id: String,
+    pub target_position: Option<String>,
 }
 
 impl Comment {
-    pub fn new(author_id: String, body: String, last_modified: String, target_id: String, target_position: Option<String>) -> Self {
+    pub fn new(author_id: String, body: String, target_id: String, target_position: Option<String>) -> Self {
         Self {
             id: None,
             author_id,
             body,
-            last_modified,
+            last_modified: None,
             target_id,
             target_position,
         }
@@ -26,6 +26,6 @@ impl Comment {
         self.id = Some(id)
     }
     pub fn set_last_modified(&mut self, last_modified: String) {
-        self.last_modified = last_modified
+        self.last_modified = Some(last_modified)
     }
 }

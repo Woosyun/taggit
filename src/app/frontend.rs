@@ -39,7 +39,7 @@ pub async fn authenticate() -> Result<(), ServerFnError> {
             dbg!(user.user_name);
             Ok(())
         },
-        None => Err(ServerFnError::ServerError("UNAUTHORIZED".to_string())),
+        None => Err(ServerFnError::new("UNAUTHORIZED")),
     }
 }
 
@@ -60,16 +60,16 @@ pub fn Frontend() -> impl IntoView {
         <Router>
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
-                    <Route path=StaticSegment("/") view=home_page::HomePage/>
+                    <Route path=StaticSegment("/") view=home::HomePage/>
                     <ProtectedRoute 
                         path=StaticSegment("create") 
-                        view=create_note_page::CreateNotePage
+                        view=create::CreateNotePage
                         condition=move || authenticated.get()
                         redirect_path=|| "/login"
                     />
                     <Route path=StaticSegment("/register") view=auth::RegisterPage />
                     <Route path=StaticSegment("/login") view=auth::LoginPage />
-                    <Route path=path!("/view/note/:id") view=view_note_page::NoteViewPage />
+                    <Route path=path!("/view/note/:id") view=view::ViewNotePage />
                 </Routes>
             </main>
         </Router>

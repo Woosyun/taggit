@@ -3,7 +3,7 @@ use leptos_router::{
     hooks::*,
     components::A,
 };
-use crate::{note::Note, app::AuthButton};
+use crate::{note::Note, app::auth::AuthButton};
 
 #[component]
 pub fn HomePage() -> impl IntoView {

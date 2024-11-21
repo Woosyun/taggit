@@ -75,14 +75,13 @@ pub async fn insert_note(
         note::Note,
     };
 
-    let tags = tags.unwrap_or_default();
-
     let auth_session: AuthSession<Backend> = extract().await?;
     let note_service = use_context::<AppState>()
         .unwrap()
         .db
         .note_service;
 
+    let tags = tags.unwrap_or_default();
     let user_id = auth_session.user
         .map(|user| user.user_id)
         .ok_or(ServerFnError::new("Unauthorized"))?;

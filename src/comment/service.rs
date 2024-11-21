@@ -31,18 +31,23 @@ impl CommentService {
     
     pub async fn insert_one(&self, mut new_comment: Comment) -> Result<InsertOneResult, Error> {
         new_comment.set_id(bson::oid::ObjectId::new().to_hex());
-        new_comment.set_last_modified(DateTime::new().to_string());
+        new_comment.set_last_modified(DateTime::now().to_string());
 
         self.collection.insert_one(new_comment).await
     }
-    pub async fn find_by_target_id(&self, target_id: String) -> Result<Vec<Comment>, Error> {
-        let projection = bson::doc! {
+    fn projection() -> bson::Document {
+        bson::doc! {
             "_id": 1,
+            "author_id": 1,
             "body": 1,
-            "author_id", 1,
             "last_modified": 1,
+            "target_id": 1,
             "target_position": 1,
-        };
+        }
+    }
+    pub async fn find_by_target_id(&self, target_id: String) -> Result<Vec<Comment>, Error> {
+        let projection = Self::projection();
+
         let options = FindOptions::builder()
             .limit(5)
             .projection(projection)
@@ -60,13 +65,8 @@ impl CommentService {
     }
     
     pub async fn find_by_position(&self, target_id: String, target_position: String) -> Result<Vec<Comment>, Error> {
-        let projection = bson::doc! {
-            "_id": 1,
-            "body": 1,
-            "author_id", 1,
-            "last_modified": 1,
-            "target_position": 1,
-        };
+        let projection = Self::projection();
+        
         let options = FindOptions::builder()
             .limit(5)
             .projection(projection)
