@@ -138,38 +138,46 @@ pub async fn register(user_id: String, password: String, user_name: String) -> R
 
 #[component]
 pub fn AuthButton() -> impl IntoView {
-    let authenticated = use_context::<Resource<bool>>().expect("missing authenticated value");
+    use crate::app::Authenticated;
+    let authenticated = use_context::<Authenticated>().expect("missing authenticated value").0;
 
     let logout = Action::new(|_| {
         async move {
             logout().await
         }
     });
-    let logout_button = move || {
+    let logout_button = move |_| {
         view! {
             <button on:click=move |_| { logout.dispatch(()); }>logout</button>
         }
     };
-    let login_button = move || {
+    let login_button = move |_| {
         view! {
             <A href="/login">login</A>
         }
     };
-    let auth_button = move |authenticated: bool| {
-        view! {
-            <Show
-                when=move || authenticated
-                fallback=login_button
-            >
-                {logout_button}
-            </Show>
-        }
-    };
+    // let _auth_button = move |authenticated: bool| {
+    //     view! {
+    //         <Show
+    //             when=move || authenticated
+    //             fallback=login_button
+    //         >
+    //             {logout_button}
+    //         </Show>
+    //     }
+    // };
     
     
     view! {
         <Suspense fallback=move || view! {<span>"..."</span>}>
-            {move || authenticated.get().map(auth_button)}
+            <ErrorBoundary fallback=login_button>
+                {move || {
+                    authenticated.get().map(|authenticated| {
+                        authenticated.map(logout_button)
+                    })
+                }}
+            </ErrorBoundary>
+            // {move || authenticated.get().map(auth_button)}
         </Suspense>
     }
 }
@@ -189,3 +197,4 @@ pub async fn logout() -> Result<(), ServerFnError> {
     
     Ok(())
 }
+

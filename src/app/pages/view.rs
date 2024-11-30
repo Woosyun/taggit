@@ -9,7 +9,7 @@ use crate::comment::Comment;
 
 #[derive(Clone, PartialEq, Params)]
 struct ContactParams {
-    id: String
+    id: String,
 }
 
 #[component] 

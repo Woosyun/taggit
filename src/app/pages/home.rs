@@ -3,23 +3,20 @@ use leptos_router::{
     hooks::*,
     components::A,
 };
-use crate::{note::Note, app::auth::AuthButton};
+use crate::{
+    note::Note, 
+    app::{
+        auth::AuthButton,
+        utils::get_tags_from_query,
+    },
+};
 
 #[component]
 pub fn HomePage() -> impl IntoView {
     use web_sys::window;
 
     let query = use_query_map();
-    let tags = move || query
-        .get()
-        .get_all("tags")
-        .map(|tags| {
-            tags
-                .into_iter()
-                .filter(|s| !s.is_empty())
-                .collect()
-        })
-        .unwrap_or_default();
+    let tags = move || get_tags_from_query(query);
 
     Effect::new(
         move |_| {
@@ -86,7 +83,7 @@ pub fn HomePage() -> impl IntoView {
         let target_url = "/view/note/".to_string();
         target_url+note_id
     };
-    
+
     view! {
         <div class="topbar">
             <A href=url_for_new_note>+</A>

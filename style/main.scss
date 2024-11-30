@@ -54,7 +54,7 @@ button:hover {
     cursor: pointer;
 }
 
-.note-container {
+.container {
     display: flex;
     flex-direction: column;
     width: 90dvw;
@@ -63,7 +63,10 @@ button:hover {
     gap: 1rem;
 }
 
-.note-body {
+.container textarea {
     flex-grow: 1;
     resize: none;
+}
+.container input {
+    flex-grow: 0;
 }

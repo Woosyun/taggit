@@ -43,15 +43,19 @@ pub async fn authenticate() -> Result<(), ServerFnError> {
     }
 }
 
+#[derive(Clone)]
+pub struct Authenticated(pub Resource<Result<(), ServerFnError>>);
+
 #[component]
 pub fn Frontend() -> impl IntoView {
-    // Provides context that manages stylesheets, titles, meta tags, etc.
     provide_meta_context();
 
     let authenticated = Resource::new(|| (), |_| async move {
-        authenticate().await.is_ok()
+        authenticate().await
     });
-    provide_context(authenticated);
+    provide_context(Authenticated(authenticated));
+    let authenticated = move || authenticated.get()
+        .map(|re| re.is_ok());
 
     view! {
         <Stylesheet id="leptos" href="pkg/taggit.css"/>
@@ -60,16 +64,25 @@ pub fn Frontend() -> impl IntoView {
         <Router>
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
-                    <Route path=StaticSegment("/") view=home::HomePage/>
-                    <ProtectedRoute 
-                        path=StaticSegment("create") 
-                        view=create::CreateNotePage
-                        condition=move || authenticated.get()
-                        redirect_path=|| "/login"
-                    />
+                    <Route path=path!("/") view=SearchPage />
+                    // <Route path=StaticSegment("/") view=home::HomePage/>
+                    // <ProtectedRoute 
+                    //     path=StaticSegment("create") 
+                    //     view=create::CreateNotePage
+                    //     condition=authenticated
+                    //     redirect_path=|| "/login"
+                    // />
                     <Route path=StaticSegment("/register") view=auth::RegisterPage />
                     <Route path=StaticSegment("/login") view=auth::LoginPage />
-                    <Route path=path!("/view/note/:id") view=view::ViewNotePage />
+                    // <Route path=path!("/view/note/:id") view=view::ViewNotePage />
+                    <Route path=path!("/commit/:id") view=CommitPage />
+                    <ProtectedRoute
+                        path=path!("/create")
+                        view=CreateCommitPage
+                        condition=authenticated
+                        redirect_path=|| "/login"
+                    />
+                    <Route path=path!("/view/:id") view=ViewCommitPage />
                 </Routes>
             </main>
         </Router>

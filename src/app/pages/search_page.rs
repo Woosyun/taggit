@@ -1,0 +1,168 @@
+use leptos::{html, prelude::*, ev};
+use leptos_router::{
+    hooks::*,
+    components::A,
+};
+use crate::{
+    commit::Commit,
+    app::{
+        auth::AuthButton,
+        utils::get_tags_from_query,
+    },
+};
+
+#[component] 
+pub fn SearchBar() -> impl IntoView {
+    use web_sys::window;
+    
+    let query = use_query_map();
+    let tags = move || get_tags_from_query(query);
+    let input_ref: NodeRef<html::Input> = NodeRef::new();
+    let add_tag = move |ev: ev::SubmitEvent| {
+        ev.prevent_default();
+
+        let input = input_ref.get().expect("input ref to exists").value();
+
+        //check validity of input
+        if tags().contains(&input) {
+            window().unwrap().alert_with_message("input is already in query").unwrap();
+            return;
+        }
+
+        let mut new_query = query
+            .get();
+        new_query.insert("tags", input);
+        let new_query = new_query.to_query_string();
+
+        window().unwrap().location().set_search(&new_query).unwrap();
+    };
+    let create_commit_page_url = move || {
+        let a = "/create".to_string();
+        let b = query.get().to_query_string();
+
+        a+b.as_str()
+    };
+    
+    view! {
+        <div class="topbar">
+            <A href=create_commit_page_url>+</A>
+
+            <form on:submit=add_tag>
+                <input type="search" node_ref=input_ref/>
+                <input type="submit" value="search" />
+            </form>
+            
+            {AuthButton}
+        </div>
+    }
+}
+
+#[component] 
+pub fn TagBar() -> impl IntoView {
+    use web_sys::window;
+    
+    let query = use_query_map();
+    let tags = move || get_tags_from_query(query);
+    let delete_tag = move |tag: String| {
+        if !tags().contains(&tag) {
+            return;
+        }
+
+        let mut new_tags = tags();
+        new_tags.retain(|t| t != &tag);
+        let mut new_query = query
+            .get();
+
+        new_query.remove("tags");
+        for tag in new_tags {
+            new_query.insert("tags", tag);
+        }
+        let new_query = new_query.to_query_string();
+        
+        window().unwrap().location().set_search(&new_query).unwrap();
+    };
+
+    view! {
+        <div class="tagbar">
+            <For each=tags key=|tag| tag.clone() children=move |tag: String| {
+                let tag0 = tag.clone();
+                view! {
+                    <span class="badge" on:click=move |ev| {
+                        ev.prevent_default();
+                        delete_tag(tag0.clone());
+                    }>{tag}</span>
+                }
+            } />
+        </div>
+    }
+}
+
+#[component] 
+pub fn CommitItem(commit: Commit) -> impl IntoView {
+    view! {
+        <div>{commit.title}</div>
+    }
+}
+
+#[component] 
+pub fn SearchResultViewer() -> impl IntoView {
+    let query = use_query_map();
+    let tags = move || get_tags_from_query(query);
+    let items = Resource::new(tags, |tags| async move {
+        search(Some(tags)).await
+    });
+    
+    let commit_page_url = |id: &Option<String>| {
+        let a = "view/".to_string();
+        let b = id.as_ref().unwrap();
+        a+b
+    };
+    
+    view! {
+        <Transition fallback=move || view! { <p>"searching commits..."</p>}>
+        <ErrorBoundary fallback=move |_| view! {<h1>"error while searching"</h1>}>
+        <ul>
+            {move || {
+                items.get().map(|re| {
+                    re.map(|items| {
+                        items.into_iter().map(|item| {
+                            let id = item.id.clone();
+                            view! {
+                                <A href=move || commit_page_url(&id.clone())>
+                                    <li><CommitItem commit=item /></li>
+                                </A>
+                            }
+                        }).collect_view()
+                    })
+                })
+            }}
+        </ul>
+        </ErrorBoundary>
+        </Transition>
+    }
+}
+
+#[server]
+pub async fn search(tags: Option<Vec<String>>) -> Result<Vec<Commit>, ServerFnError> {
+    use crate::app::AppState;
+    use leptos::prelude::use_context;
+
+    let tags = tags
+        .unwrap_or_else(|| vec![]);
+    
+    let search_service = use_context::<AppState>()
+        .unwrap()
+        .db.commit_service;
+    
+    search_service.find_items_by_tags(tags).await
+        .map_err(ServerFnError::new)
+}
+
+#[component] 
+pub fn SearchPage() -> impl IntoView {
+    view! {
+        <SearchBar />
+        <TagBar />
+        <SearchResultViewer />
+    }
+}
