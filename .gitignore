@@ -14,3 +14,4 @@ playwright/.cache/
 
 .env
 .node_modules
+old

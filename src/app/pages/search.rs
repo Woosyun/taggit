@@ -4,10 +4,10 @@ use leptos_router::{
     components::A,
 };
 use crate::{
-    commit::Commit,
+    text::{Text, self},
     app::{
-        auth::AuthButton,
-        utils::get_tags_from_query,
+        pages::auth::AuthButton,
+        utils::*,
     },
 };
 
@@ -16,14 +16,13 @@ pub fn SearchBar() -> impl IntoView {
     use web_sys::window;
     
     let query = use_query_map();
-    let tags = move || get_tags_from_query(query);
+    let tags = move || get_tags_from_query(&query.get());
     let input_ref: NodeRef<html::Input> = NodeRef::new();
     let add_tag = move |ev: ev::SubmitEvent| {
         ev.prevent_default();
 
         let input = input_ref.get().expect("input ref to exists").value();
 
-        //check validity of input
         if tags().contains(&input) {
             window().unwrap().alert_with_message("input is already in query").unwrap();
             return;
@@ -36,8 +35,9 @@ pub fn SearchBar() -> impl IntoView {
 
         window().unwrap().location().set_search(&new_query).unwrap();
     };
-    let create_commit_page_url = move || {
-        let a = "/create".to_string();
+
+    let commit_page_url = move || {
+        let a = "/text".to_string();
         let b = query.get().to_query_string();
 
         a+b.as_str()
@@ -45,7 +45,7 @@ pub fn SearchBar() -> impl IntoView {
     
     view! {
         <div class="topbar">
-            <A href=create_commit_page_url>+</A>
+            <A href=commit_page_url>+</A>
 
             <form on:submit=add_tag>
                 <input type="search" node_ref=input_ref/>
@@ -62,7 +62,7 @@ pub fn TagBar() -> impl IntoView {
     use web_sys::window;
     
     let query = use_query_map();
-    let tags = move || get_tags_from_query(query);
+    let tags = move || get_tags_from_query(&query.get());
     let delete_tag = move |tag: String| {
         if !tags().contains(&tag) {
             return;
@@ -98,25 +98,12 @@ pub fn TagBar() -> impl IntoView {
 }
 
 #[component] 
-pub fn CommitItem(commit: Commit) -> impl IntoView {
-    view! {
-        <div>{commit.title}</div>
-    }
-}
-
-#[component] 
 pub fn SearchResultViewer() -> impl IntoView {
     let query = use_query_map();
-    let tags = move || get_tags_from_query(query);
+    let tags = move || get_tags_from_query(&query.get());
     let items = Resource::new(tags, |tags| async move {
         search(Some(tags)).await
     });
-    
-    let commit_page_url = |id: &Option<String>| {
-        let a = "view/".to_string();
-        let b = id.as_ref().unwrap();
-        a+b
-    };
     
     view! {
         <Transition fallback=move || view! { <p>"searching commits..."</p>}>
@@ -126,11 +113,10 @@ pub fn SearchResultViewer() -> impl IntoView {
                 items.get().map(|re| {
                     re.map(|items| {
                         items.into_iter().map(|item| {
-                            let id = item.id.clone();
                             view! {
-                                <A href=move || commit_page_url(&id.clone())>
-                                    <li><CommitItem commit=item /></li>
-                                </A>
+                                <li>
+                                    <text::view::SearchItem text=item />
+                                </li>
                             }
                         }).collect_view()
                     })
@@ -143,23 +129,23 @@ pub fn SearchResultViewer() -> impl IntoView {
 }
 
 #[server]
-pub async fn search(tags: Option<Vec<String>>) -> Result<Vec<Commit>, ServerFnError> {
+pub async fn search(tags: Option<Vec<String>>) -> Result<Vec<Text>, ServerFnError> {
     use crate::app::AppState;
     use leptos::prelude::use_context;
 
     let tags = tags
-        .unwrap_or_else(|| vec![]);
+        .unwrap_or_default();
     
     let search_service = use_context::<AppState>()
         .unwrap()
-        .db.commit_service;
+        .db.text_service;
     
     search_service.find_items_by_tags(tags).await
         .map_err(ServerFnError::new)
 }
 
 #[component] 
-pub fn SearchPage() -> impl IntoView {
+pub fn Page() -> impl IntoView {
     view! {
         <SearchBar />
         <TagBar />

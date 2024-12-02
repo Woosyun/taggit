@@ -1,13 +1,9 @@
 use mongodb::{error::Error, options::ClientOptions, Client, Database};
-use crate::note::NoteService;
-use crate::comment::CommentService;
-use crate::commit::CommitService;
+use crate::text::TextService;
 
 #[derive(Clone, Debug)]
 pub struct DB {
-    pub note_service: NoteService,
-    pub comment_service: CommentService,
-    pub commit_service: CommitService,
+    pub text_service: TextService,
 }
 
 impl DB {
@@ -33,9 +29,7 @@ impl DB {
         // println!("Connected to database: {}, note collection: {}", db_name, note_col_name);
 
         Ok(Self {
-            note_service: NoteService::new(database),
-            comment_service: CommentService::new(database),
-            commit_service: CommitService::new(database),
+            text_service: TextService::new(database),
         })
     }
 }

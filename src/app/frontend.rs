@@ -1,7 +1,7 @@
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
-    components::{Route, Router, Routes, ProtectedRoute},
+    components::{Route, Router, Routes},
     StaticSegment,
     path,
 };
@@ -54,35 +54,20 @@ pub fn Frontend() -> impl IntoView {
         authenticate().await
     });
     provide_context(Authenticated(authenticated));
-    let authenticated = move || authenticated.get()
-        .map(|re| re.is_ok());
+    // let authenticated = move || authenticated.get()
+    //     .map(|re| re.is_ok());
 
     view! {
-        <Stylesheet id="leptos" href="pkg/taggit.css"/>
+        <Stylesheet id="leptos" href="/pkg/taggit.css"/>
         <Title text="Welcome to Leptos"/>
 
         <Router>
             <main>
                 <Routes fallback=|| "Page not found.".into_view()>
-                    <Route path=path!("/") view=SearchPage />
-                    // <Route path=StaticSegment("/") view=home::HomePage/>
-                    // <ProtectedRoute 
-                    //     path=StaticSegment("create") 
-                    //     view=create::CreateNotePage
-                    //     condition=authenticated
-                    //     redirect_path=|| "/login"
-                    // />
+                    <Route path=path!("/") view=search::Page />
                     <Route path=StaticSegment("/register") view=auth::RegisterPage />
                     <Route path=StaticSegment("/login") view=auth::LoginPage />
-                    // <Route path=path!("/view/note/:id") view=view::ViewNotePage />
-                    <Route path=path!("/commit/:id") view=CommitPage />
-                    <ProtectedRoute
-                        path=path!("/create")
-                        view=CreateCommitPage
-                        condition=authenticated
-                        redirect_path=|| "/login"
-                    />
-                    <Route path=path!("/view/:id") view=ViewCommitPage />
+                    <Route path=path!("/text") view=text::Page />
                 </Routes>
             </main>
         </Router>

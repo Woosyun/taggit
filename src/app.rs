@@ -1,12 +1,3 @@
-mod frontend;
-mod pages;
-
-pub use frontend::*;
-pub use pages::*;
-
-pub mod utils;
-pub use utils::*;
-
 use cfg_if::cfg_if;
 cfg_if! {
     if #[cfg(feature="ssr")] {
@@ -14,3 +5,11 @@ cfg_if! {
         pub use backend::*;
     }
 }
+
+mod frontend;
+pub use frontend::*;
+
+pub mod utils;
+pub use utils::*;
+
+pub mod pages;

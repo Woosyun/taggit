@@ -1,8 +1,6 @@
 pub mod app;
-pub mod note;
 pub mod user;
-pub mod comment;
-pub mod commit;
+pub mod text;
 
 use cfg_if::cfg_if;
 cfg_if! {

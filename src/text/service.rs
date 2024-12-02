@@ -1,5 +1,4 @@
-#![allow(unused)]
-use super::Commit;
+use super::Text;
 
 use mongodb::{
     error::Error, 
@@ -15,32 +14,28 @@ use futures::stream::TryStreamExt;
 use leptos::prelude::*;
 
 #[derive(Clone, Debug)]
-pub struct CommitService {
-    collection: Collection::<Commit>,
+pub struct TextService {
+    collection: Collection::<Text>,
 }
 
-impl CommitService {
+impl TextService {
     pub fn new(db: &Database) -> Self {
-        // let commit_col_name = std::env::var("MONGODB_COMMIT_COLLECTION_NAME")
-        //     .expect("MONGODB_COMMIT_COLLECTION_NAME should be set");
-        let collection = db.collection::<Commit>("commits");
-
         Self {
-            collection
+            collection: db.collection::<Text>("texts"),
         }
     }
 
-    pub async fn insert_one(&self, mut new_commit: Commit) -> Result<InsertOneResult, Error> {
-        new_commit.set_id(bson::oid::ObjectId::new().to_hex());
-        new_commit.update_last_modified(DateTime::now().to_string());
-        self.collection.insert_one(new_commit).await
+    pub async fn insert_one(&self, mut text: Text) -> Result<InsertOneResult, Error> {
+        text.set_id(bson::oid::ObjectId::new().to_hex());
+        text.update_last_modified(DateTime::now().to_string());
+        self.collection.insert_one(text).await
     }
 
-    pub async fn find_one_by_id(&self, id: String) -> Result<Option<Commit>, Error> {
+    pub async fn find_one_by_id(&self, id: String) -> Result<Option<Text>, Error> {
         self.collection.find_one(bson::doc!{"_id": id}).await
     }
 
-    pub async fn find_items_by_parent_id(&self, id: String) -> Result<Vec<Commit>, Error> {
+    pub async fn find_items_by_parent_id(&self, id: String) -> Result<Vec<Text>, Error> {
         let projection = bson::doc! {
             "_id": 1,
             "author_id": 1,
@@ -67,7 +62,7 @@ impl CommitService {
         Ok(items)
     }
 
-    pub async fn find_items_by_tags(&self, tags: Vec<String>) -> Result<Vec<Commit>, Error> {
+    pub async fn find_items_by_tags(&self, tags: Vec<String>) -> Result<Vec<Text>, Error> {
         let projection = bson::doc! {
             "_id": 1,
             "author_id": 1,
@@ -83,9 +78,9 @@ impl CommitService {
             .build();
 
         let query = if tags.is_empty() {
-            bson::doc! {}
+            bson::doc! {"parent_id": {"$eq": bson::Bson::Null}}
         } else {
-            bson::doc! {"tags": { "$all": tags}}
+            bson::doc! {"tags": { "$all": tags}, "parent_id": {"$eq": bson::Bson::Null}}
         };
 
         let items = self.collection.find(query)

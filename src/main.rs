@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 #[cfg(feature = "ssr")]
 #[tokio::main]
 async fn main() {
@@ -10,7 +8,7 @@ async fn main() {
 
     let app = App::new().await;
 
-    app.serve().await;
+    app.serve().await.unwrap();
 }
 // async fn main() {
 //     use axum::{routing::get, Router};
