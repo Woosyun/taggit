@@ -5,7 +5,7 @@ use crate::{
         utils::*,
         frontend::Authenticated,
     },
-    text::{Text, self},
+    text::{TextItem, Text, self},
 };
 
 #[component] 
@@ -40,10 +40,10 @@ pub fn Page() -> impl IntoView {
         </Suspense>
 
         <Suspense fallback=move || view! {<p>"fetching child commits..."</p>}>
-            {move || child_commits.get().map(|commits| {
-                commits.into_iter().map(|commit| {
+            {move || child_commits.get().map(|items| {
+                items.into_iter().map(|item| {
                     view! {
-                        <text::view::SearchItem text=commit />
+                        <text::view::SearchItem item=item />
                     }
                 }).collect_view()
             })}
@@ -92,7 +92,7 @@ async fn fetch_commit(parent_id: Option<String>, child_id: Option<String>) -> Re
  */
 
 #[server]
-async fn fetch_child_commits(parent_id: Option<String>) -> Result<Vec<Text>, ServerFnError> {
+async fn fetch_child_commits(parent_id: Option<String>) -> Result<Vec<TextItem>, ServerFnError> {
     use crate::app::AppState;
     
     let parent_id = match parent_id {

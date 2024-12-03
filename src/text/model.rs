@@ -44,3 +44,28 @@ impl Text {
         self.last_modified = Some(date);
     }
 }
+
+
+#[derive(Debug, Serialize, Deserialize, Default, Clone)]
+pub struct TextItem {
+    pub id: Option<String>,
+    pub author_id: String,
+    pub parent_id: Option<String>,
+    pub title: String,
+    #[serde(default)]
+    pub tags: Vec<String>,
+    pub last_modified: Option<String>,
+}
+
+impl From<Text> for TextItem {
+    fn from(text: Text) -> Self {
+        TextItem {
+            id: text.id,
+            author_id: text.author_id,
+            parent_id: text.parent_id,
+            title: text.title,
+            tags: text.tags,
+            last_modified: text.last_modified,
+        }
+    }
+}

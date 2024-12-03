@@ -1,4 +1,4 @@
-use super::Text;
+use super::{Text, TextItem};
 
 use mongodb::{
     error::Error, 
@@ -34,7 +34,7 @@ impl TextService {
         self.collection.find_one(bson::doc!{"_id": id}).await
     }
 
-    pub async fn find_items_by_parent_id(&self, id: String) -> Result<Vec<Text>, Error> {
+    pub async fn find_items_by_parent_id(&self, id: String) -> Result<Vec<TextItem>, Error> {
         let projection = bson::doc! {
             "_id": 1,
             "author_id": 1,
@@ -50,18 +50,19 @@ impl TextService {
 
         let query = bson::doc! {"parent_id": id};
 
-        let items = self.collection.find(query)
+        self.collection.find(query)
             .with_options(options)
             .await
             .map_err(|e| dbg!(e))?
             .try_collect()
             .await
-            .map_err(|e| dbg!(e))?;
-
-        Ok(items)
+            .map_err(|e| dbg!(e))
+            .map(|texts: Vec<Text>| {
+                texts.into_iter().map(Into::into).collect()
+            })
     }
 
-    pub async fn find_items_by_tags(&self, tags: Vec<String>) -> Result<Vec<Text>, Error> {
+    pub async fn find_items_by_tags(&self, tags: Vec<String>) -> Result<Vec<TextItem>, Error> {
         let projection = bson::doc! {
             "_id": 1,
             "author_id": 1,
@@ -82,14 +83,15 @@ impl TextService {
             bson::doc! {"tags": { "$all": tags}, "parent_id": {"$eq": bson::Bson::Null}}
         };
 
-        let items = self.collection.find(query)
+        self.collection.find(query)
             .with_options(options)
             .await
             .map_err(|e| dbg!(e))?
             .try_collect()
             .await
-            .map_err(|e| dbg!(e))?;
-
-        Ok(items)
+            .map_err(|e| dbg!(e))
+            .map(|texts: Vec<Text>| {
+                texts.into_iter().map(Into::into).collect()
+            })
     }
 }

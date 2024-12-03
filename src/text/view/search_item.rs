@@ -1,16 +1,16 @@
 use leptos::prelude::*;
 use leptos_router::components::A;
-use crate::text::Text;
+use crate::text::TextItem;
 
 #[component] 
-pub fn SearchItem(text: Text) -> impl IntoView {
+pub fn SearchItem(item: TextItem) -> impl IntoView {
     let text_view_url = move || {
-        format!("/text?parent_id={}", text.id.clone().expect("missing text id"))
+        format!("/text?parent_id={}", item.id.clone().expect("missing text id"))
     };
 
     view! {
         <A href=text_view_url>
-            {text.title}
+            {item.title}
         </A>
     }
 }

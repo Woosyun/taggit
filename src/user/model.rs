@@ -8,7 +8,6 @@ pub struct User {
     pub password: String,
     pub user_name: String,
     pub posts: Vec<String>,
-    pub comments: Vec<(String, String)>, //(note id, comment id),
 }
 
 impl User {
@@ -19,7 +18,6 @@ impl User {
             password,
             user_name,
             posts: vec![],
-            comments: vec![],
         }
     }
     pub fn set_id(&mut self, new_id: String) {

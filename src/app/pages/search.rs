@@ -4,7 +4,7 @@ use leptos_router::{
     components::A,
 };
 use crate::{
-    text::{Text, self},
+    text::{TextItem, self},
     app::{
         pages::auth::AuthButton,
         utils::*,
@@ -115,7 +115,7 @@ pub fn SearchResultViewer() -> impl IntoView {
                         items.into_iter().map(|item| {
                             view! {
                                 <li>
-                                    <text::view::SearchItem text=item />
+                                    <text::view::SearchItem item=item />
                                 </li>
                             }
                         }).collect_view()
@@ -129,7 +129,7 @@ pub fn SearchResultViewer() -> impl IntoView {
 }
 
 #[server]
-pub async fn search(tags: Option<Vec<String>>) -> Result<Vec<Text>, ServerFnError> {
+pub async fn search(tags: Option<Vec<String>>) -> Result<Vec<TextItem>, ServerFnError> {
     use crate::app::AppState;
     use leptos::prelude::use_context;
 
