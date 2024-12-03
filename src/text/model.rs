@@ -37,6 +37,9 @@ impl Text {
     pub fn set_id(&mut self, id: String) {
         self.id = Some(id);
     }
+    pub fn set_author_id(&mut self, id: String) {
+        self.author_id = id
+    }
     pub fn update_last_modified(&mut self, date: String) {
         self.last_modified = Some(date);
     }

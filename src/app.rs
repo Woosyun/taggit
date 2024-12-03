@@ -6,7 +6,7 @@ cfg_if! {
     }
 }
 
-mod frontend;
+pub mod frontend;
 pub use frontend::*;
 
 pub mod utils;

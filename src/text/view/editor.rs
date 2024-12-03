@@ -4,7 +4,7 @@ use crate::text::Text;
 #[component] 
 pub fn Editor(text: Text, tags: Vec<String>, authenticated: bool) -> impl IntoView {
     let (title, set_title) = signal(text.title);
-    let (body, set_body) = signal(text.body.expect("missing body"));
+    let (body, set_body) = signal(text.body.unwrap_or_default());
     let (tags, _set_tags) = signal(tags);
     let (readonly, set_readonly) = signal(true);
     
@@ -24,21 +24,23 @@ pub fn Editor(text: Text, tags: Vec<String>, authenticated: bool) -> impl IntoVi
         );
         
         async move {
-            commit(text).await
+            commit(dbg!(text)).await
         }
     });
 
     let reader = move || {
         view! {
-            <h1>{title}</h1>
-            <div>
-                {body}
+            <div class="container">
+                <h1>{title}</h1>
+                <div class="body">
+                    {body}
+                </div>
+                <button class="btn" on:click=move |_| {
+                    set_readonly(false);
+                }>
+                    "edit"
+                </button>
             </div>
-            <button on:click=move |_| {
-                set_readonly(false);
-            }>
-                "edit"
-            </button>
         }
     };
 
@@ -54,10 +56,10 @@ pub fn Editor(text: Text, tags: Vec<String>, authenticated: bool) -> impl IntoVi
                 <input type="text" prop:value=title on:input:target=move |ev| {
                     set_title(ev.target().value());
                 }/>
-                <textarea prop:value=body on:input:target=move |ev| {
+                <textarea class="body" prop:value=body on:input:target=move |ev| {
                     set_body(ev.target().value());
                 }>{body}</textarea>
-                <input type="submit" value="commit" />
+                <input type="submit" value="commit" class="btn"/>
             </form>
         </Show>
     }
@@ -82,9 +84,7 @@ async fn commit(text: Text) -> Result<String, ServerFnError> {
         .db.text_service;
 
     let mut text = text;
-    text.parent_id = text.id;
-    text.id = None::<String>;
-    text.author_id = user_id;
+    text.set_author_id(user_id);
 
     let re = text_service.insert_one(dbg!(text)).await
         .map_err(ServerFnError::new)

@@ -12,6 +12,7 @@ use crate::{
 pub fn Page() -> impl IntoView {
     let query = use_query_map();
     let tags = move || get_tags_from_query(&query.get());
+    let authenticated = use_context::<Authenticated>().expect("missing authenticated context").0;
     
     let commit = Resource::new(query, |query| async move {
         let parent_id = get_parent_id_from_query(&query);
@@ -20,10 +21,14 @@ pub fn Page() -> impl IntoView {
         fetch_commit(parent_id, child_id).await.unwrap_or_default()
     });
 
-    let authenticated = use_context::<Authenticated>().expect("missing authenticated context").0;
+    let child_commits = Resource::new(query, |query| async move {
+        let parent_id = get_parent_id_from_query(&query);
 
+        fetch_child_commits(parent_id).await.unwrap_or_default()
+    });
+    
     view! {
-        <Suspense fallback=move || view! {"fetching commit..."}>
+        <Suspense fallback=move || view! {<h1>"fetching commit..."</h1>}>
             {move || Suspend::new(async move {
                 let commit = commit.await;
                 let authenticated = authenticated.await.is_ok();
@@ -31,6 +36,16 @@ pub fn Page() -> impl IntoView {
                 view! {
                     <text::view::Editor text=commit tags=tags() authenticated=authenticated/>
                 }
+            })}
+        </Suspense>
+
+        <Suspense fallback=move || view! {<p>"fetching child commits..."</p>}>
+            {move || child_commits.get().map(|commits| {
+                commits.into_iter().map(|commit| {
+                    view! {
+                        <text::view::SearchItem text=commit />
+                    }
+                }).collect_view()
             })}
         </Suspense>
     }
@@ -47,17 +62,13 @@ async fn fetch_commit(parent_id: Option<String>, child_id: Option<String>) -> Re
     use crate::app::AppState;
     use leptos_axum::redirect;
     
-    let parent_id = match dbg!(parent_id) {
+    let parent_id = match parent_id {
         Some(id) => id,
         None => {
             return Ok(Text::default());
         }
     };
-
-    let target_id = match dbg!(child_id) {
-        Some(id) => id,
-        None => parent_id
-    };
+    let target_id = child_id.unwrap_or_else(|| parent_id);
 
     let text_service = use_context::<AppState>()
         .expect("missing AppState")
@@ -73,4 +84,27 @@ async fn fetch_commit(parent_id: Option<String>, child_id: Option<String>) -> Re
             redirect("/");
             ServerFnError::new(dbg!("invalid id. No text found"))
         })
+}
+
+/*
+    1. parent_id == NULL => nothing
+    2. parent_id != NULL => child commits
+ */
+
+#[server]
+async fn fetch_child_commits(parent_id: Option<String>) -> Result<Vec<Text>, ServerFnError> {
+    use crate::app::AppState;
+    
+    let parent_id = match parent_id {
+        Some(id) => id,
+        None => return Ok(vec![])
+    };
+
+    let text_service = use_context::<AppState>()
+        .expect("missing AppState")
+        .db
+        .text_service;
+
+    text_service.find_items_by_parent_id(parent_id).await
+        .map_err(ServerFnError::new)
 }

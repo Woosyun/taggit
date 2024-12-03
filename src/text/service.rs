@@ -5,7 +5,6 @@ use mongodb::{
     Collection, 
     results::InsertOneResult,
     bson,
-    bson::DateTime,
     options::FindOptions,
     Database,
 };
@@ -27,7 +26,7 @@ impl TextService {
 
     pub async fn insert_one(&self, mut text: Text) -> Result<InsertOneResult, Error> {
         text.set_id(bson::oid::ObjectId::new().to_hex());
-        text.update_last_modified(DateTime::now().to_string());
+        text.update_last_modified(bson::DateTime::now().to_string());
         self.collection.insert_one(text).await
     }
 

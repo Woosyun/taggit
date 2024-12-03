@@ -62,11 +62,12 @@ button:hover {
     height: 95dvh;
     gap: 1rem;
 }
-
-.container textarea {
+.container .body {
     flex-grow: 1;
-    resize: none;
 }
-.container input {
+.container .btn {
     flex-grow: 0;
+}
+.container textarea {
+    resize: none;
 }
