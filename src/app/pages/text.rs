@@ -5,7 +5,7 @@ use crate::{
         utils::*,
         frontend::Authenticated,
     },
-    text::{TextItem, Text, self},
+    text::{Text, self},
 };
 
 #[component] 
@@ -43,7 +43,7 @@ pub fn Page() -> impl IntoView {
             {move || child_commits.get().map(|items| {
                 items.into_iter().map(|item| {
                     view! {
-                        <text::view::SearchItem item=item />
+                        <text::ItemViewer item=item />
                     }
                 }).collect_view()
             })}
@@ -51,12 +51,12 @@ pub fn Page() -> impl IntoView {
     }
 }
 
-/*
-    1. parent_id == NULL => commit (create repository)
-    2. parent_id != NULL && child_id == NULL => commit (create branch)
-    3. parent_id != NULL && child_id != NULL => diff
- */
 
+/*
+    parent_commit == None => create root revision
+    parent_commit != None && child_commit == None => view revision and allow commit
+    parent_commit != None && child_commit != None => show diff
+*/
 #[server] 
 async fn fetch_commit(parent_id: Option<String>, child_id: Option<String>) -> Result<Text, ServerFnError> {
     use crate::app::AppState;
@@ -92,7 +92,7 @@ async fn fetch_commit(parent_id: Option<String>, child_id: Option<String>) -> Re
  */
 
 #[server]
-async fn fetch_child_commits(parent_id: Option<String>) -> Result<Vec<TextItem>, ServerFnError> {
+async fn fetch_child_commits(parent_id: Option<String>) -> Result<Vec<text::Item>, ServerFnError> {
     use crate::app::AppState;
     
     let parent_id = match parent_id {

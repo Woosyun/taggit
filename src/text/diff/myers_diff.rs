@@ -1,18 +1,19 @@
-#[derive(PartialEq, Debug)]
+use serde::{Serialize, Deserialize};
+
+#[derive(PartialEq, Debug, Serialize, Deserialize)]
 pub enum EditAction {
     Add(usize, String),
     Delete(usize),
 }
 
-// pub fn myers_diff(before: String, after: String) -> Result<Vec<EditAction>, String> {
-//     let before: Vec<&str> = before.lines().collect::<Vec<&str>>();
-//     let after: Vec<&str> = after.lines().collect::<Vec<&str>>();
-
-//     let mut edit_graph = EditGraph::new(&before, &after);
-    
-//     edit_graph.get_edit_script(0)
-//         .map(|(_, v)| v)
-// }
+impl EditAction {
+    pub fn index(&self) -> &usize {
+        match self {
+            EditAction::Add(idx, _) => &idx,
+            EditAction::Delete(idx) => &idx,
+        }
+    }
+}
 
 pub fn myers_diff<'a>(base: usize, before: &[&'a str], after: &[&'a str]) -> Result<(usize, Vec<EditAction>), String> {
     if before.len() == 0 {
@@ -196,60 +197,6 @@ impl<'a> EditGraph<'a>
 
         None
     }
-
-    // fn get_edit_script(&mut self, base: usize) -> Result<(usize, Vec<EditAction>), String> {
-    //     if self.a.len() == 0 {
-    //         let adds = self.b
-    //             .iter()
-    //             .enumerate()
-    //             .map(|(_, &str)| EditAction::Add(base, str.to_string()))
-    //             .collect::<Vec<EditAction>>();
-
-    //         return Ok((base, adds));
-    //     } else if self.b.len() == 0 {
-    //         let deletes = self.a
-    //             .iter()
-    //             .enumerate()
-    //             .map(|_| EditAction::Delete(base))
-    //             .collect::<Vec<EditAction>>();
-
-    //         return Ok((base, deletes));
-    //     }
-
-    //     let middle_snake = self.find_middle_snake().expect("missing middle_snake");
-
-    //     let before_front = self.a
-    //         .iter()
-    //         .take(middle_snake.x.0)
-    //         .map(|&t| t)
-    //         .collect::<Vec<&str>>();
-    //     let after_front = self.b
-    //         .iter()
-    //         .take(middle_snake.y.0)
-    //         .map(|&t| t)
-    //         .collect::<Vec<&str>>();
-
-    //     let mut front_graph = EditGraph::new(&before_front, &after_front);
-    //     let (base, mut front) = front_graph.get_edit_script(base)?;
-    //     let base = base + middle_snake.x.1 - middle_snake.x.0;
-
-    //     let before_back = self.a
-    //         .iter()
-    //         .skip(middle_snake.x.1)
-    //         .map(|&t| t)
-    //         .collect::<Vec<&str>>();
-    //     let after_back = self.b
-    //         .iter()
-    //         .skip(middle_snake.y.1)
-    //         .map(|&t| t)
-    //         .collect::<Vec<&str>>();
-    //     let mut back_graph = EditGraph::new(&before_back, &after_back);
-    //     let (base, back)= back_graph.get_edit_script(base)?;
-        
-    //     front.extend(back);
-
-    //     Ok((base, front))
-    // }
 }
 
 
@@ -325,7 +272,7 @@ pub mod tests {
     }
 
     fn samples_dir() -> String {
-        "/home/woo/taggit/leptos/src/text/diff/samples/".to_string()
+        "/home/woo/taggit/leptos/src/text/diff/test_cases/".to_string()
     }
 
     #[test] 

@@ -1,19 +1,5 @@
-#![allow(unused)]
+pub mod myers_diff;
+pub use myers_diff::{myers_diff, EditAction};
 
-use super::Text;
-
-struct TextDiff {
-    pub parent_commit: Text,
-    pub child_commit: Text,
-}
-
-impl TextDiff {
-    pub fn new(parent_commit: Text, child_commit: Text) -> Self {
-        Self {
-            parent_commit,
-            child_commit
-        }
-    }
-
-    
-}
+pub mod apply_edit_actions;
+pub use apply_edit_actions::*;
