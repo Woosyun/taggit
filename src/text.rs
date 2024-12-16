@@ -1,8 +1,5 @@
 pub mod model;
-pub use model::{Text, Item, Commit};
-
-pub mod view;
-pub use view::*;
+pub use model::{Text, Item};
 
 pub mod diff;
 pub use diff::*;

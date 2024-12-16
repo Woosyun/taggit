@@ -1,4 +1,4 @@
-use super::{Text, Item};
+use crate::text::{Text, self};
 
 use mongodb::{
     error::Error, 
@@ -34,7 +34,7 @@ impl TextService {
         self.collection.find_one(bson::doc!{"_id": id}).await
     }
 
-    pub async fn find_items_by_parent_id(&self, id: String) -> Result<Vec<Item>, Error> {
+    pub async fn find_items_by_parent_id(&self, id: String) -> Result<Vec<text::Item>, Error> {
         let projection = bson::doc! {
             "_id": 1,
             "author_id": 1,
@@ -62,7 +62,7 @@ impl TextService {
             })
     }
 
-    pub async fn find_items_by_tags(&self, tags: Vec<String>) -> Result<Vec<Item>, Error> {
+    pub async fn find_items_by_tags(&self, tags: Vec<String>) -> Result<Vec<text::Item>, Error> {
         let projection = bson::doc! {
             "_id": 1,
             "author_id": 1,

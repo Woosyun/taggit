@@ -37,7 +37,7 @@ pub fn SearchBar() -> impl IntoView {
     };
 
     let commit_page_url = move || {
-        let a = "/text".to_string();
+        let a = get_text_edit_page_url(None);
         let b = query.get().to_query_string();
 
         a+b.as_str()
@@ -115,7 +115,7 @@ pub fn SearchResultViewer() -> impl IntoView {
                         items.into_iter().map(|item| {
                             view! {
                                 <li>
-                                    <text::ItemViewer item=item />
+                                    <TextItemViewer item=item />
                                 </li>
                             }
                         }).collect_view()
@@ -125,6 +125,15 @@ pub fn SearchResultViewer() -> impl IntoView {
         </ul>
         </ErrorBoundary>
         </Transition>
+    }
+}
+
+#[component] 
+pub fn TextItemViewer(item: text::Item) -> impl IntoView {
+    view! {
+        <A href=get_text_view_page_url(None, item.id)>
+            {item.title}
+        </A>
     }
 }
 
@@ -152,3 +161,4 @@ pub fn Page() -> impl IntoView {
         <SearchResultViewer />
     }
 }
+

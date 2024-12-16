@@ -1,5 +1,4 @@
 use serde::{Serialize, Deserialize};
-use super::{EditAction, myers_diff};
 
 #[derive(Debug, Serialize, Deserialize, Default, Clone)]
 pub struct Text {
@@ -68,50 +67,5 @@ impl From<Text> for Item {
             tags: text.tags,
             last_modified: text.last_modified,
         }
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct Commit {
-    pub parent: Option<Text>,
-    pub child: Option<Item>,
-    pub edit_script: Vec<EditAction>,
-    pub len_of_lcs: usize,
-}
-
-impl Commit {
-    pub fn new(parent: Option<Text>, child: Option<Text>) -> Result<Self, String> {
-        let before = parent.as_ref().expect("missing parent")
-            .body.as_ref()
-            .expect("missing body")
-            .lines()
-            .collect::<Vec<&str>>();
-        let after = child.as_ref().expect("missing child")
-            .body.as_ref()
-            .expect("missing body")
-            .lines()
-            .collect::<Vec<&str>>();
-
-        let (len_of_lcs, edit_script) = myers_diff(0, &before, &after)?;
-        
-        let commit = Self {
-            parent,
-            child: child.map(Item::from),
-            edit_script,
-            len_of_lcs,
-        };
-
-        Ok(commit)
-    }
-
-    pub fn edit_mode(&self) -> usize {
-        let p = self.parent.is_some();
-        let c = self.child.is_some();
-
-        ((p as usize) << 1) | c as usize
-    }
-
-    pub fn is_diff_mode(&self) -> bool {
-        self.edit_mode() == 3
     }
 }

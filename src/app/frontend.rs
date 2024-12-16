@@ -67,7 +67,8 @@ pub fn Frontend() -> impl IntoView {
                     <Route path=path!("/") view=search::Page />
                     <Route path=StaticSegment("/register") view=auth::RegisterPage />
                     <Route path=StaticSegment("/login") view=auth::LoginPage />
-                    <Route path=path!("/text") view=text::Page />
+                    <Route path=path!("/text/view") view=text::view::Page />
+                    <Route path=path!("/text/edit") view=text::edit::Page />
                 </Routes>
             </main>
         </Router>
