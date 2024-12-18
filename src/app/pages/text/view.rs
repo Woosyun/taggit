@@ -5,10 +5,7 @@ use leptos_router::{
 };
 use crate::{
     text::{Text, self},
-    app::utils::{
-        get_child_id_from_query,
-        get_parent_id_from_query,
-    }
+    app::utils::*,
 };
 
 #[component] 
@@ -28,9 +25,10 @@ pub fn Page() -> impl IntoView {
     });
 
     let children = Resource::new(query, |query| async move {
-        let parent_id = get_parent_id_from_query(&query);
+        let child_id = get_child_id_from_query(&query);
+        // let parent_id = get_parent_id_from_query(&query);
 
-        fetch_children(parent_id).await.unwrap_or_default()
+        fetch_children(child_id).await.unwrap_or_default()
     });
 
     view! {
@@ -38,22 +36,39 @@ pub fn Page() -> impl IntoView {
             {move || Suspend::new(async move {
                 let parent = parent.await;
                 let child = child.await;
+                let child_id = get_child_id_from_query(&query.get());
 
                 view! {
                     <TextCommitViewer parent=parent child=child />
+                    
+                    <A href=get_text_edit_page_url(child_id)>
+                        "Commit"
+                    </A>
                 }
             })}
         </Suspense>
 
+        <br />
+
         <Suspense fallback=move || view! {<p>"fetcing children..."</p>}>
             {move || children.get().map(|items| {
+                let child_id = get_child_id_from_query(&query.get());
                 items.into_iter().map(|item| {
                     view! {
-                        <TextItemViewer item=item />
+                        <TextItemViewer parent_id=child_id.clone() child_item=item />
                     }
                 }).collect_view()
             })}
         </Suspense>
+    }
+}
+
+#[component] 
+pub fn TextItemViewer(parent_id: Option<String>, child_item: text::Item) -> impl IntoView {
+    view! {
+        <A href=get_text_view_page_url(parent_id, child_item.id.expect("missing child_item.id"))>
+            {child_item.title}
+        </A>
     }
 }
 
@@ -153,24 +168,18 @@ pub fn TextCommitViewer(parent: Text, child: Text) -> impl IntoView {
 
     
     view! {
-        <h1>"numer of deletion: "{len_of_delete}</h1>
-        <h1>"numer of addition: "{len_of_add}</h1>
+        <p>
+            <span>"numer of deletion: "{len_of_delete}</span>
+            <span>"numer of addition: "{len_of_add}</span>
+        </p>
 
+        <br />
+        <h1>{child.title}</h1>
+        <br />
+        
         <div>
             {body}
         </div>
     }
 }
 
-#[component] 
-pub fn TextItemViewer(item: text::Item) -> impl IntoView {
-    let text_view_url = move || {
-        format!("/text/view?parent_id={}", item.id.clone().expect("missing text id"))
-    };
-
-    view! {
-        <A href=text_view_url>
-            {item.title}
-        </A>
-    }
-}

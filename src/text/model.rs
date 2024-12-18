@@ -1,6 +1,6 @@
 use serde::{Serialize, Deserialize};
 
-#[derive(Debug, Serialize, Deserialize, Default, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Text {
     #[serde(rename="_id")]
     pub id: Option<String>,
@@ -11,6 +11,20 @@ pub struct Text {
     #[serde(default)]
     pub tags: Vec<String>,
     pub last_modified: Option<String>,
+}
+
+impl Default for Text {
+    fn default() -> Self {
+        Self {
+            id: None,
+            author_id: "default author id".to_string(),
+            parent_id: None,
+            title: "default title".to_string(),
+            body: Some("".to_string()),
+            tags: vec![],
+            last_modified: None,
+        }
+    }
 }
 
 impl Text {

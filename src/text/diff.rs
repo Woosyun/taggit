@@ -1,5 +1,8 @@
 pub mod myers_diff;
-pub use myers_diff::{myers_diff, EditAction};
+pub use myers_diff::myers_diff;
 
-pub mod apply_edit_actions;
-pub use apply_edit_actions::*;
+pub mod edit_action;
+pub use edit_action::*;
+
+pub mod edit_graph;
+pub use edit_graph::*;

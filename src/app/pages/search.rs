@@ -1,4 +1,4 @@
-use leptos::{html, prelude::*, ev};
+use leptos::{html, prelude::*};
 use leptos_router::{
     hooks::*,
     components::A,
@@ -16,25 +16,7 @@ pub fn SearchBar() -> impl IntoView {
     use web_sys::window;
     
     let query = use_query_map();
-    let tags = move || get_tags_from_query(&query.get());
     let input_ref: NodeRef<html::Input> = NodeRef::new();
-    let add_tag = move |ev: ev::SubmitEvent| {
-        ev.prevent_default();
-
-        let input = input_ref.get().expect("input ref to exists").value();
-
-        if tags().contains(&input) {
-            window().unwrap().alert_with_message("input is already in query").unwrap();
-            return;
-        }
-
-        let mut new_query = query
-            .get();
-        new_query.insert("tags", input);
-        let new_query = new_query.to_query_string();
-
-        window().unwrap().location().set_search(&new_query).unwrap();
-    };
 
     let commit_page_url = move || {
         let a = get_text_edit_page_url(None);
@@ -47,12 +29,27 @@ pub fn SearchBar() -> impl IntoView {
         <div class="topbar">
             <A href=commit_page_url>+</A>
 
-            <form on:submit=add_tag>
+            <form on:submit=move |ev| {
+                ev.prevent_default();
+
+                let input = input_ref.get().expect("missing input_ref").value();
+        
+                let mut query = query.get();
+                if get_tags_from_query(&query).contains(&input){
+                    window().unwrap().alert_with_message("input is already in query").unwrap();
+                    return;
+                }
+        
+                query.insert("tags", input);
+                let query = query.to_query_string();
+        
+                window().unwrap().location().set_search(&query).unwrap();
+            }>
                 <input type="search" node_ref=input_ref/>
                 <input type="submit" value="search" />
             </form>
             
-            {AuthButton}
+            <AuthButton />
         </div>
     }
 }
@@ -100,8 +97,9 @@ pub fn TagBar() -> impl IntoView {
 #[component] 
 pub fn SearchResultViewer() -> impl IntoView {
     let query = use_query_map();
-    let tags = move || get_tags_from_query(&query.get());
-    let items = Resource::new(tags, |tags| async move {
+    let items = Resource::new(query, |query| async move {
+        let tags = get_tags_from_query(&query);
+        
         search(Some(tags)).await
     });
     
@@ -131,7 +129,7 @@ pub fn SearchResultViewer() -> impl IntoView {
 #[component] 
 pub fn TextItemViewer(item: text::Item) -> impl IntoView {
     view! {
-        <A href=get_text_view_page_url(None, item.id)>
+        <A href=get_text_view_page_url(None, item.id.expect("missing item.id"))>
             {item.title}
         </A>
     }
