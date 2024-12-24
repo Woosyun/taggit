@@ -36,14 +36,9 @@ pub fn Page() -> impl IntoView {
             {move || Suspend::new(async move {
                 let parent = parent.await;
                 let child = child.await;
-                let child_id = get_child_id_from_query(&query.get());
 
                 view! {
                     <TextCommitViewer parent=parent child=child />
-                    
-                    <A href=get_text_edit_page_url(child_id)>
-                        "Commit"
-                    </A>
                 }
             })}
         </Suspense>
@@ -66,9 +61,11 @@ pub fn Page() -> impl IntoView {
 #[component] 
 pub fn TextItemViewer(parent_id: Option<String>, child_item: text::Item) -> impl IntoView {
     view! {
+        <p>
         <A href=get_text_view_page_url(parent_id, child_item.id.expect("missing child_item.id"))>
             {child_item.title}
         </A>
+        </p>
     }
 }
 
@@ -158,13 +155,14 @@ pub fn TextCommitViewer(parent: Text, child: Text) -> impl IntoView {
     let len_of_add = after.len() - len_of_lcs;
     let len_of_delete = before.len() - len_of_lcs;
     let body = text::apply_edit_actions(before, edit_script).expect("failed to apply commit")
-        .into_iter()
-        .map(|str| {
-            view! {
-                <p>{str}</p>
-            }
-        })
-        .collect::<Vec<_>>();
+        .join("\n");
+        // .into_iter()
+        // .map(|str| {
+        //     view! {
+        //         <p>{str}</p>
+        //     }
+        // })
+        // .collect::<Vec<_>>();
 
     
     view! {
@@ -173,13 +171,20 @@ pub fn TextCommitViewer(parent: Text, child: Text) -> impl IntoView {
             <span>"numer of addition: "{len_of_add}</span>
         </p>
 
-        <br />
-        <h1>{child.title}</h1>
-        <br />
-        
-        <div>
-            {body}
+        <div class="container">
+            <h1>{child.title}</h1>
+            
+            <textarea class="body" readonly>
+                {body}
+            </textarea>
+
+            <A href=get_text_edit_page_url(child.id)>
+                <div class="btn_but_a">
+                    "Commit"
+                </div>
+            </A>
         </div>
+        
     }
 }
 

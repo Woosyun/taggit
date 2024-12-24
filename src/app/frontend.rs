@@ -1,7 +1,7 @@
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
-    components::{Route, Router, Routes},
+    components::{Route, Router, Routes, ProtectedRoute},
     StaticSegment,
     path,
 };
@@ -54,8 +54,6 @@ pub fn Frontend() -> impl IntoView {
         authenticate().await
     });
     provide_context(Authenticated(authenticated));
-    // let authenticated = move || authenticated.get()
-    //     .map(|re| re.is_ok());
 
     view! {
         <Stylesheet id="leptos" href="/pkg/taggit.css"/>
@@ -68,7 +66,12 @@ pub fn Frontend() -> impl IntoView {
                     <Route path=StaticSegment("/register") view=auth::RegisterPage />
                     <Route path=StaticSegment("/login") view=auth::LoginPage />
                     <Route path=path!("/text/view") view=text::view::Page />
-                    <Route path=path!("/text/edit") view=text::edit::Page />
+                    <ProtectedRoute 
+                        condition=move || authenticated.get().map(|re| re.is_ok())
+                        path=path!("/text/edit")
+                        redirect_path=move || "/"
+                        view=text::edit::Page
+                    />
                 </Routes>
             </main>
         </Router>

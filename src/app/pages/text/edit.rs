@@ -1,10 +1,7 @@
 use leptos::prelude::*;
 use leptos_router::hooks::use_query_map;
 use crate::{
-    app::{
-        utils::*,
-        frontend::Authenticated,
-    },
+    app::utils::*,
     text::Text,
 };
 
@@ -18,7 +15,7 @@ use crate::{
 #[component] 
 pub fn Page() -> impl IntoView {
     let query = use_query_map();
-    let _authenticated = use_context::<Authenticated>().expect("missing authenticated context").0;
+    // let _authenticated = use_context::<Authenticated>().expect("missing authenticated context").0;
     
     let parent_revision = Resource::new(query, |query| async move {
         let parent_id = get_parent_id_from_query(&query);
@@ -45,6 +42,8 @@ pub fn Page() -> impl IntoView {
 async fn fetch_revision(id: Option<String>) -> Result<Text, ServerFnError> {
     use crate::app::AppState;
     use leptos_axum::redirect;
+
+    //TODO: authenticate and redirect if user isn't exist
 
     let text_service = use_context::<AppState>()
         .expect("missing AppState")
@@ -101,9 +100,9 @@ pub fn TextEditor(text: Text, tags: Vec<String>) -> impl IntoView {
         view! {
             <div class="container">
                 <h1>{title}</h1>
-                <div class="body">
+                <textarea class="body" readonly>
                     {body}
-                </div>
+                </textarea>
                 <button class="btn" on:click=move |_| {
                     set_readonly(false);
                 }>

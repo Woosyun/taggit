@@ -1,6 +1,9 @@
 use crate::text::{EditAction, EditGraph};
 
 pub fn myers_diff<'a>(base: usize, before: &[&'a str], after: &[&'a str]) -> Result<(usize, Vec<EditAction>), String> {
+    println!("before : {:?}", &before);
+    println!("after : {:?}", &after);
+    
     if before.len() == 0 {
         let adds = after
             .iter()
@@ -20,7 +23,7 @@ pub fn myers_diff<'a>(base: usize, before: &[&'a str], after: &[&'a str]) -> Res
     }
 
     let mut edit_graph = EditGraph::new(before, after);
-    let middle_snake = edit_graph.find_middle_snake().expect("missing middle_snake");
+    let middle_snake = edit_graph.find_middle_snake().expect("finding middle snake should always success");
 
     let before_front = before
         .iter()
@@ -92,5 +95,32 @@ hello world";
 
         assert_eq!(len_of_lcs, 1);
         assert_eq!(edit_actions, vec![EditAction::Delete(1)]);
+    }
+
+    #[test] 
+    pub fn modify_and_add_multiple_lines() {
+        use EditAction::{Add, Delete};
+        
+        let before = "\
+hello world
+This line would be preserved";
+        let after = "\
+hello world!!
+This line would be preserved
+And I added 3rd line,
+and 4th line";
+
+        let before = before.lines().collect::<Vec<&str>>();
+        let after = after.lines().collect::<Vec<&str>>();
+
+        let (len_of_lcs, edit_actions) = myers_diff(0, &before, &after).expect("failed to diff");
+
+        assert_eq!(len_of_lcs, 1);
+        assert_eq!(edit_actions, vec![
+            Add(0, "hello world!!".to_string()),
+            Delete(0),
+            Add(1, "And I added 3rd line,".to_string()),
+            Add(1, "and 4th line".to_string())
+        ]);
     }
 }

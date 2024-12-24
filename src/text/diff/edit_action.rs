@@ -16,6 +16,8 @@ impl EditAction {
 }
 
 pub fn apply_edit_actions(base: Vec<&str>, edit_actions: Vec<EditAction>) -> Result<Vec<String>, String> {
+    dbg!(&edit_actions);
+    
     let mut result = vec![];
     let mut edit_iter = edit_actions.into_iter().peekable();
     let mut line_index = 0;
@@ -43,7 +45,7 @@ pub fn apply_edit_actions(base: Vec<&str>, edit_actions: Vec<EditAction>) -> Res
             break;
         }
         
-        result.push(base[line_index].to_owned());
+        result.push("  ".to_string() + base[line_index]);
         line_index += 1;
         len_of_lcs += 1;
     }
