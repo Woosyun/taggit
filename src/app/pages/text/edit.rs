@@ -92,7 +92,7 @@ pub fn TextEditor(text: Text, tags: Vec<String>) -> impl IntoView {
         );
         
         async move {
-            commit(dbg!(text)).await
+            commit(text).await
         }
     });
 
@@ -142,14 +142,27 @@ async fn commit(text: Text) -> Result<String, ServerFnError> {
         auth::Backend,
     };
 
+    let text_service = use_context::<AppState>()
+        .expect("missing AppState")
+        .db.text_service;
+
+    //check whether new text has different body
+    let parent = match text.id.clone() {
+        Some(id) => {
+            text_service.find_one_by_id(id).await
+                .map_err(ServerFnError::new)?
+                .unwrap_or_default()
+        },
+        None => Text::default()
+    };
+    if parent.body == text.body.clone() {
+        return Err(ServerFnError::new("edit something"));
+    }
+
     let user_id = extract::<AuthSession<Backend>>().await?
         .user
         .ok_or(ServerFnError::new("Unauthorized"))?
         .user_id;
-
-    let text_service = use_context::<AppState>()
-        .expect("missing AppState")
-        .db.text_service;
 
     let mut text = text;
     text.set_author_id(user_id);
