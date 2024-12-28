@@ -16,9 +16,9 @@ pub struct UserService {
 
 impl UserService {
     pub fn new(db: &Database) -> Self {
-        let user_col_name = std::env::var("MONGODB_USER_COLLECTION_NAME")
-            .expect("MONGODB_USER_COLLECTION_NAME must be set");
-        let collection = db.collection::<User>(&user_col_name);
+        //let user_col_name = std::env::var("MONGODB_USER_COLLECTION_NAME")
+            //.expect("MONGODB_USER_COLLECTION_NAME must be set");
+        let collection = db.collection::<User>("users");
         
         Self {
             collection
