@@ -14,20 +14,15 @@ pub fn Page() -> impl IntoView {
 
     let parent = Resource::new(query, |query| async move {
         let parent_id = get_parent_id_from_query(&query);
-        
         fetch_parent_revision(parent_id).await.expect("redirect didn't work")
     });
-    // child != NULL always
     let child = Resource::new(query, |query| async move {
         let child_id = get_child_id_from_query(&query);
-        
         fetch_child_revision(child_id).await.expect("redirect didn't work")
     });
 
     let children = Resource::new(query, |query| async move {
         let child_id = get_child_id_from_query(&query);
-        // let parent_id = get_parent_id_from_query(&query);
-
         fetch_children(child_id).await.unwrap_or_default()
     });
 
@@ -47,10 +42,10 @@ pub fn Page() -> impl IntoView {
 
         <Suspense fallback=move || view! {<p>"fetcing children..."</p>}>
             {move || children.get().map(|items| {
-                let child_id = get_child_id_from_query(&query.get());
+                //let child_id = get_child_id_from_query(&query.get());
                 items.into_iter().map(|item| {
                     view! {
-                        <TextItemViewer parent_id=child_id.clone() child_item=item />
+                        <TextItemViewer item=item />
                     }
                 }).collect_view()
             })}
@@ -59,11 +54,11 @@ pub fn Page() -> impl IntoView {
 }
 
 #[component] 
-pub fn TextItemViewer(parent_id: Option<String>, child_item: text::Item) -> impl IntoView {
+pub fn TextItemViewer(item: text::Item) -> impl IntoView {
     view! {
         <p>
-        <A href=get_text_view_page_url(parent_id, child_item.id.expect("missing child_item.id"))>
-            {child_item.title}
+        <A href=get_text_view_page_url(item.parent_id, item.id.expect("missing child_item.id"))>
+            {item.title}
         </A>
         </p>
     }

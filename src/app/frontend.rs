@@ -72,6 +72,7 @@ pub fn Frontend() -> impl IntoView {
                         redirect_path=move || "/"
                         view=text::edit::Page
                     />
+                    <Route path=path!("/note") view=note::Page />
                 </Routes>
             </main>
         </Router>
