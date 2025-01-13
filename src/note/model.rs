@@ -1,6 +1,9 @@
 use leptos::prelude::*;
 use serde::{Serialize, Deserialize};
 use crate::note::Element;
+use leptos::html::Div;
+use wasm_bindgen::{closure::Closure, JsCast};
+use leptos::logging::log;
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct Note {
@@ -30,6 +33,34 @@ impl IntoRender for Note {
     type Output = Vec<AnyView>;
 
     fn into_render(self) -> Self::Output {
-        self.body.into_iter().map(IntoRender::into_render).collect_view()
+        let node_tree = vec![NodeRef::<Div>::new(); self.body.len()];
+
+        let tmp= node_tree.clone();
+        Effect::new(move || {
+            let mut iter = tmp.iter();
+            let mut prev_node: Option<&NodeRef::<Div>> = None;
+
+            while let Some(cur_node) = iter.next() {
+                if prev_node.is_none() { 
+                    prev_node = Some(cur_node);
+                    continue; 
+                }
+
+                let on_click: Closure<dyn Fn()> = Closure::new(|| {
+                    let value = cur_node.get().expect("cannot get cur_node")
+                        .inner_text();
+                    log!("value under this element: {}", value);
+                });
+                prev_node.unwrap().get().expect("cannot get prev_node")
+                    .set_onclick(Some(on_click.as_ref().unchecked_ref()));
+            }
+        });
+        
+        view! {
+            {self.body.into_iter().zip(node_tree)
+                .map(|(elem, node_ref)| elem.render(node_ref)).collect_view()
+            }
+        }
+        //self.body.into_iter().map(IntoRender::into_render).collect_view()
     }
 }

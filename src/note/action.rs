@@ -21,9 +21,6 @@ pub trait NoteAction {
     type Body;
     type Ptr;
     
-    // Body -> frontend
-    //fn render() -> impl IntoView;
-
     // frontend -> Body : scan frontend and reflect changes to Body
     fn synchronize(&mut self);
 
