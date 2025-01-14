@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use leptos::prelude::*;
 use serde::{Serialize, Deserialize};
 use crate::note::Element;
@@ -33,34 +35,36 @@ impl IntoRender for Note {
     type Output = Vec<AnyView>;
 
     fn into_render(self) -> Self::Output {
-        let node_tree = vec![NodeRef::<Div>::new(); self.body.len()];
+        // TODO: find out how to prevent Closure type being dropped.
+        // 1. make it signal => X
+        //    : trait bound issues
+        // 2. put variable to broader scope (higher level, attribute of struct)
+        // 3. make it static
+        // 4. 
+        let node_tree = (0..self.body.len()).map(|_| NodeRef::<Div>::new()).collect::<Vec<_>>();
+        let (node_tree, _) = signal(node_tree);
 
-        let tmp= node_tree.clone();
         Effect::new(move || {
-            let mut iter = tmp.iter();
-            let mut prev_node: Option<&NodeRef::<Div>> = None;
-
-            while let Some(cur_node) = iter.next() {
-                if prev_node.is_none() { 
-                    prev_node = Some(cur_node);
-                    continue; 
+            let mut prev_node: Option<NodeRef::<Div>> = None;
+            for node in node_tree.get() {
+                if !prev_node.is_none() {
+                    let on_click: Closure<dyn Fn()> = Closure::new(move || {
+                        let value = node.get().expect("cannot get current node")
+                            .inner_text();
+                        log!("value under this element: {}", value);
+                    });
+                    prev_node.unwrap().get().expect("cannot get prev_node")
+                        .set_onclick(Some(on_click.as_ref().unchecked_ref()));
+                    prev_node = Some(node);
                 }
-
-                let on_click: Closure<dyn Fn()> = Closure::new(|| {
-                    let value = cur_node.get().expect("cannot get cur_node")
-                        .inner_text();
-                    log!("value under this element: {}", value);
-                });
-                prev_node.unwrap().get().expect("cannot get prev_node")
-                    .set_onclick(Some(on_click.as_ref().unchecked_ref()));
+                prev_node = Some(node);
             }
         });
         
         view! {
-            {self.body.into_iter().zip(node_tree)
+            {self.body.into_iter().zip(node_tree.get())
                 .map(|(elem, node_ref)| elem.render(node_ref)).collect_view()
             }
         }
-        //self.body.into_iter().map(IntoRender::into_render).collect_view()
     }
 }
