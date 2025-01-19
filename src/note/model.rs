@@ -31,6 +31,10 @@ impl Note {
     }
 }
 
+pub struct EventFunc<T: FnMut()> {
+    pub on_click: T,
+}
+
 impl IntoRender for Note {
     type Output = Vec<AnyView>;
 
@@ -40,21 +44,29 @@ impl IntoRender for Note {
         //    : trait bound issues
         // 2. put variable to broader scope (higher level, attribute of struct)
         // 3. make it static
-        // 4. 
+        // 4. make it with type Closure_once_js(?)
+
         let node_tree = (0..self.body.len()).map(|_| NodeRef::<Div>::new()).collect::<Vec<_>>();
         let (node_tree, _) = signal(node_tree);
 
+        //let ev_tree = (0..self.body.len()).map(|_| None).collect::<Vec<_>>();
+        //let (ev_tree, set_ev_tree) = signal(ev_tree);
+
         Effect::new(move || {
             let mut prev_node: Option<NodeRef::<Div>> = None;
+            //let mut ev_idx = 0;
+
             for node in node_tree.get() {
-                if !prev_node.is_none() {
+                if prev_node.is_some() {
                     let on_click: Closure<dyn Fn()> = Closure::new(move || {
                         let value = node.get().expect("cannot get current node")
                             .inner_text();
                         log!("value under this element: {}", value);
                     });
+
                     prev_node.unwrap().get().expect("cannot get prev_node")
                         .set_onclick(Some(on_click.as_ref().unchecked_ref()));
+
                     prev_node = Some(node);
                 }
                 prev_node = Some(node);
@@ -62,8 +74,10 @@ impl IntoRender for Note {
         });
         
         view! {
-            {self.body.into_iter().zip(node_tree.get())
-                .map(|(elem, node_ref)| elem.render(node_ref)).collect_view()
+            {
+                self.body.into_iter()
+                    .map(IntoRender::into_render)
+                    .collect_view()
             }
         }
     }
