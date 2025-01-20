@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 use leptos::prelude::*;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub enum Element {
     H1(String),
     P(String)
