@@ -1,10 +1,6 @@
-use leptos::prelude::*;
 use serde::{Serialize, Deserialize};
-use crate::note::Element;
+use leptos::prelude::*;
 use leptos::html::Div;
-use wasm_bindgen::{closure::Closure, JsCast};
-use leptos::logging::log;
-use std::rc::Rc;
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct Note {
@@ -14,7 +10,7 @@ pub struct Note {
     pub parent_id: Option<String>,
     pub last_modified: Option<String>,
     #[serde(default)]
-    pub body: Vec<Element>, // maybe Vec<NodeRef<Div>>
+    pub body: Vec<Element>,
     #[serde(default)]
     pub tags: Vec<String>,
 }
@@ -29,6 +25,80 @@ impl Note {
         self.last_modified = Some(date);
     }
 }
+impl IntoRender for Note {
+    type Output = Vec<AnyView>;
+
+    fn into_render(self) -> Self::Output {
+        let len = self.body.len();
+        let (body, _) = signal(self.body);
+        let node_refs_ = (0..len).map(|_| NodeRef::<Div>::new()).collect::<Vec<_>>();
+        let (node_refs, _) = signal(node_refs_);
+
+        // why is it okay at handling node_ref inside view! and not okay at outside of view?
+
+        body
+            .get()
+            .into_iter()
+            .enumerate()
+            .map(|(idx, elem)| {
+                view! {
+                    <div 
+                        node_ref=node_refs.get().get(idx).expect("cannot get node_ref").to_owned()
+                        on:click=move |ev| {
+                            ev.prevent_default();
+
+                            if let Some(next_ref) = node_refs.read().get(idx + 1) {
+                                let text = next_ref
+                                    .get().expect("cannot get next node")
+                                    .inner_text();
+                                leptos::logging::log!("text under this element: {}", text);
+                            } else {
+                                leptos::logging::log!("nothing under this element");
+                            }
+                        }
+                    >
+                        {elem}
+                    </div>
+                }.into_any()
+            })
+            .collect_view()
+    }
+}
+
+
+#[derive(Serialize, Deserialize, Clone)]
+pub enum Element {
+    H1(String),
+    P(String)
+}
+
+impl Default for Element {
+    fn default() -> Self {
+        Self::P("".to_string())
+    }
+}
+
+impl IntoRender for Element {
+    type Output = AnyView;
+
+    fn into_render(self) -> Self::Output {
+        match self {
+            Element::H1(content) => {
+                view! {
+                    <h1>{content}</h1>
+                }.into_any()
+            },
+            Element::P(content) => {
+                view! {
+                    <p>{content}</p>
+                }.into_any()
+            }
+        }
+    }
+}
+
+/*
+use wasm_bindgen::{closure::Closure, JsCast};
 
 #[derive(Clone)]
 pub struct DomNode {
@@ -36,15 +106,8 @@ pub struct DomNode {
     pub node_ref: NodeRef<Div>,
     pub onclick: Rc<Option<Closure<dyn FnMut()>>>
 }
-impl DomNode {
-    pub fn new(elem: Element) -> Self {
-        Self {
-            element: elem,
-            node_ref: NodeRef::new(),
-            onclick: Rc::new(None)
-        }
-    }
 
+impl DomNode {
     pub fn set_onclick(&mut self, onclick: Closure<dyn FnMut()>) {
         self.onclick = Rc::new(Some(onclick));
         let onclick = self.onclick.as_ref()
@@ -53,18 +116,9 @@ impl DomNode {
             .set_onclick(onclick);
     }
 }
-impl IntoRender for DomNode {
-    type Output = AnyView;
+*/
 
-    fn into_render(self) -> Self::Output {
-        view! {
-            <div node_ref=self.node_ref>
-                {self.element}
-            </div>
-        }.into_any()
-    }
-}
-
+/*
 impl IntoRender for Note {
     type Output = Vec<AnyView>;
 
@@ -105,3 +159,6 @@ impl IntoRender for Note {
             .collect_view()
     }
 }
+*/
+
+
