@@ -1,6 +1,7 @@
 use serde::{Serialize, Deserialize};
 use leptos::prelude::*;
 use leptos::html::Div;
+use leptos::ev::KeyboardEvent;
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct Note {
@@ -26,47 +27,81 @@ impl Note {
     }
 }
 impl IntoRender for Note {
-    type Output = Vec<AnyView>;
+    type Output = AnyView;
 
     fn into_render(self) -> Self::Output {
-        let len = self.body.len();
-        let (body, _) = signal(self.body);
-        let node_refs_ = (0..len).map(|_| NodeRef::<Div>::new()).collect::<Vec<_>>();
-        let (node_refs, _) = signal(node_refs_);
+       let (nodes, set_nodes) = signal(
+            self.body
+                .into_iter()
+                .map(|elem| {
+                    (elem, NodeRef::<Div>::new())
+                })
+                .collect::<Vec<_>>()
+        );
+        let (focus, set_focus) = signal(0_usize);
+        Effect::new(move || {
+            let focus_index = focus.get();
+            match nodes.read_untracked().get(focus_index) {
+                Some(node) => {
+                    node.1
+                        .get().expect("node_ref cannot be missing")
+                        .focus().expect("focus should work(?)");
+                },
+                None => ()
+            }
+        });
 
-        // why is it okay at handling node_ref inside view! and not okay at outside of view?
+        let on_keydown = move |ev: KeyboardEvent, index: usize| {
+            //leptos::logging::log!("keydown event: {:?}", ev.key());
 
-        body
-            .get()
-            .into_iter()
-            .enumerate()
-            .map(|(idx, elem)| {
-                view! {
-                    <div 
-                        node_ref=node_refs.get().get(idx).expect("cannot get node_ref").to_owned()
-                        on:click=move |ev| {
-                            ev.prevent_default();
+            match ev.key().as_str() {
+                "Enter" => {
+                    ev.prevent_default();
+                    set_nodes.update(|nodes| {
+                        nodes.insert(index + 1, (Element::default(), NodeRef::<Div>::new()))
+                    });
 
-                            if let Some(next_ref) = node_refs.read().get(idx + 1) {
-                                let text = next_ref
-                                    .get().expect("cannot get next node")
-                                    .inner_text();
-                                leptos::logging::log!("text under this element: {}", text);
-                            } else {
-                                leptos::logging::log!("nothing under this element");
-                            }
-                        }
-                    >
-                        {elem}
-                    </div>
-                }.into_any()
-            })
-            .collect_view()
+                    set_focus(index + 1);
+                },
+                "ArrowDown" => {
+                    ev.prevent_default();
+                    let focus = focus.get();
+                    if focus < nodes.get_untracked().len() {
+                        set_focus.set(focus + 1);
+                    };
+                },
+                "ArrowUp" => {
+                    ev.prevent_default();
+                    let focus = focus.get();
+                    if focus > 0 {
+                        set_focus.set(focus - 1);
+                    };
+                },
+                _ => ()
+            }
+        };
+ 
+        view! {
+            {move || nodes
+                .get()
+                .into_iter().enumerate()
+                .map(|(idx, (elem, node_ref))| {
+                    view! {
+                        <div
+                            contenteditable=true
+                            node_ref=node_ref
+                            on:keydown=move |ev| on_keydown(ev, idx)
+                        >
+                            {elem}
+                        </div>
+                    }.into_any()
+                })
+                .collect_view()}
+        }.into_any()
     }
 }
 
-
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum Element {
     H1(String),
     P(String)
@@ -74,7 +109,7 @@ pub enum Element {
 
 impl Default for Element {
     fn default() -> Self {
-        Self::P("".to_string())
+        Self::P("default".to_string())
     }
 }
 
