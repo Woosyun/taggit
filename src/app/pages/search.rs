@@ -1,10 +1,7 @@
 use leptos::{html, prelude::*};
-use leptos_router::{
-    hooks::*,
-    components::A,
-};
+use leptos_router::hooks::*;
 use crate::{
-    text,
+    mail,
     app::{
         pages::auth::AuthButton,
         utils::*,
@@ -18,16 +15,9 @@ pub fn SearchBar() -> impl IntoView {
     let query = use_query_map();
     let input_ref: NodeRef<html::Input> = NodeRef::new();
 
-    let commit_page_url = move || {
-        let a = get_text_edit_page_url(None);
-        let b = query.get().to_query_string();
-
-        a+b.as_str()
-    };
-    
     view! {
         <div class="topbar">
-            <A href=commit_page_url>+</A>
+            <h1>Home</h1>
 
             <form on:submit=move |ev| {
                 ev.prevent_default();
@@ -113,9 +103,9 @@ pub fn SearchResultViewer() -> impl IntoView {
                         items.into_iter().map(|item| {
                             view! {
                                 <li>
-                                    <TextItemViewer item=item />
+                                    {item}
                                 </li>
-                            }
+                            }.into_any()
                         }).collect_view()
                     })
                 })
@@ -126,17 +116,8 @@ pub fn SearchResultViewer() -> impl IntoView {
     }
 }
 
-#[component] 
-pub fn TextItemViewer(item: text::Item) -> impl IntoView {
-    view! {
-        <A href=get_text_view_page_url(None, item.id.expect("missing item.id"))>
-            {item.title}
-        </A>
-    }
-}
-
 #[server]
-pub async fn search(tags: Option<Vec<String>>) -> Result<Vec<text::Item>, ServerFnError> {
+pub async fn search(tags: Option<Vec<String>>) -> Result<Vec<mail::Mail>, ServerFnError> {
     use crate::app::AppState;
     use leptos::prelude::use_context;
 
@@ -145,10 +126,25 @@ pub async fn search(tags: Option<Vec<String>>) -> Result<Vec<text::Item>, Server
     
     let search_service = use_context::<AppState>()
         .unwrap()
-        .db.text_service;
+        .db.mail_service;
     
-    search_service.find_items_by_tags(tags).await
+    search_service.find_by_tags(tags).await
         .map_err(ServerFnError::new)
+}
+
+#[component]
+pub fn MailEditor() -> impl IntoView {
+    let (text, set_text) = signal(String::new());
+
+    view! {
+        <form on:submit=move |ev| {
+            ev.prevent_default();
+            leptos::logging::log!("input: {}", text.get());
+        }>
+            <input type="text" bind:value=(text, set_text)/>
+            <input type="submit" value="send" />
+        </form>
+    }
 }
 
 #[component] 
@@ -156,6 +152,7 @@ pub fn Page() -> impl IntoView {
     view! {
         <SearchBar />
         <TagBar />
+        <MailEditor />
         <SearchResultViewer />
     }
 }

@@ -71,6 +71,14 @@ impl NoteService {
         } else {
             bson::doc! {"tags": { "$all": tags}, "parent_id": {"$eq": bson::Bson::Null}}
         };
+        /*
+            bson::doc! {
+                "$and": [
+                    { "tags": { "$all": tags } },
+                    { "qualification_tags": { "$in": user_qualification_tags } }
+                ]
+            }
+        */
 
         self.collection.find(query)
             .with_options(options)

@@ -1,7 +1,7 @@
 use serde::{Serialize, Deserialize};
 use leptos::prelude::*;
 use leptos::html::Div;
-use leptos::ev::KeyboardEvent;
+use leptos::ev::{KeyboardEvent, MouseEvent, InputEvent};
 
 #[derive(Serialize, Deserialize, Default)]
 pub struct Note {
@@ -30,18 +30,17 @@ impl IntoRender for Note {
     type Output = AnyView;
 
     fn into_render(self) -> Self::Output {
-       let (nodes, set_nodes) = signal(
+        let (nodes, set_nodes) = signal(
             self.body
                 .into_iter()
-                .map(|elem| {
-                    (elem, NodeRef::<Div>::new())
-                })
+                .map(|elem| (elem, NodeRef::<Div>::new()))
                 .collect::<Vec<_>>()
         );
+
         let (focus, set_focus) = signal(0_usize);
         Effect::new(move || {
             let focus_index = focus.get();
-            match nodes.read_untracked().get(focus_index) {
+            match nodes.get().get(focus_index) {
                 Some(node) => {
                     node.1
                         .get().expect("node_ref cannot be missing")
@@ -51,37 +50,65 @@ impl IntoRender for Note {
             }
         });
 
-        let on_keydown = move |ev: KeyboardEvent, index: usize| {
-            //leptos::logging::log!("keydown event: {:?}", ev.key());
+        let on_click = move |ev: MouseEvent, index: usize| {
+            ev.prevent_default();
 
+            let content = nodes.get()
+                .get(index).expect("node at the index cannot be missing")
+                .1.get().expect("node_ref cannot be missing")
+                .inner_html();
+            leptos::logging::log!("index: {}, inner_html: {}", index, content);
+            set_focus(index);
+        };
+
+        let on_keydown = move |ev: KeyboardEvent, index: usize| {
             match ev.key().as_str() {
                 "Enter" => {
                     ev.prevent_default();
+                    set_focus(index + 1);
                     set_nodes.update(|nodes| {
                         nodes.insert(index + 1, (Element::default(), NodeRef::<Div>::new()))
                     });
-
-                    set_focus(index + 1);
                 },
                 "ArrowDown" => {
-                    ev.prevent_default();
-                    let focus = focus.get();
-                    if focus < nodes.get_untracked().len() {
-                        set_focus.set(focus + 1);
-                    };
+                    let max_len = nodes.read()
+                        .len();
+                    if index < max_len {
+                        set_focus(index + 1);
+                    }
                 },
                 "ArrowUp" => {
-                    ev.prevent_default();
-                    let focus = focus.get();
-                    if focus > 0 {
-                        set_focus.set(focus - 1);
-                    };
+                    if index > 0 {
+                        set_focus(index - 1);
+                    }
                 },
                 _ => ()
             }
         };
- 
+
+        // 문제점 발견!!
+        // 라인 추가가 안된다!! (혹은 추가는 되었는데 업데이트가 안된다?)
+
+        let on_beforeinput = move |ev: InputEvent, index: usize| {
+            leptos::logging::log!("input type: {}", ev.input_type());
+            if ev.input_type() == "deleteContentBackward" {
+                let content = nodes.read()
+                    .get(index).expect("node at the index cannot be missing")
+                    .1.get().expect("node_ref cannot be missing")
+                    .inner_html();
+                if content.is_empty() || content == "<br>" {
+                    ev.prevent_default();
+                    set_focus(index - 1);
+                    set_nodes.update(|nodes| {
+                        nodes.remove(index);
+                    });
+                }
+            }
+        };
+
         view! {
+            <h1>length of lines: {move || nodes.get().len()}</h1>
+            <div class="note">
             {move || nodes
                 .get()
                 .into_iter().enumerate()
@@ -89,111 +116,64 @@ impl IntoRender for Note {
                     view! {
                         <div
                             contenteditable=true
+                            class="box"
                             node_ref=node_ref
+                            on:click=move |ev| on_click(ev, idx)
                             on:keydown=move |ev| on_keydown(ev, idx)
+                            on:beforeinput=move |ev| on_beforeinput(ev, idx)
                         >
-                            {elem}
+                            {elem.content}
                         </div>
                     }.into_any()
                 })
                 .collect_view()}
+            </div>
         }.into_any()
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
-pub enum Element {
-    H1(String),
-    P(String)
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub struct Element {
+    pub html_type: ElementHtmlType,
+    pub content: String
 }
-
-impl Default for Element {
-    fn default() -> Self {
-        Self::P("default".to_string())
+impl Element {
+    pub fn new(content: &str, html_type: &str) -> Self {
+        Self {
+            content: content.to_string(),
+            html_type: ElementHtmlType::from_str(html_type)
+        }
+    }
+    pub fn html_type(&self) -> &'static str {
+        self.html_type.get_type()
     }
 }
-
-impl IntoRender for Element {
-    type Output = AnyView;
-
-    fn into_render(self) -> Self::Output {
-        match self {
-            Element::H1(content) => {
-                view! {
-                    <h1>{content}</h1>
-                }.into_any()
-            },
-            Element::P(content) => {
-                view! {
-                    <p>{content}</p>
-                }.into_any()
-            }
+impl Default for Element {
+    fn default() -> Self {
+        Self {
+            html_type: ElementHtmlType::P,
+            content: "".to_string()
         }
     }
 }
 
-/*
-use wasm_bindgen::{closure::Closure, JsCast};
-
-#[derive(Clone)]
-pub struct DomNode {
-    pub element: Element,
-    pub node_ref: NodeRef<Div>,
-    pub onclick: Rc<Option<Closure<dyn FnMut()>>>
+#[derive(Serialize, Deserialize, Clone, Debug)]
+pub enum ElementHtmlType {
+    H1,
+    P
 }
-
-impl DomNode {
-    pub fn set_onclick(&mut self, onclick: Closure<dyn FnMut()>) {
-        self.onclick = Rc::new(Some(onclick));
-        let onclick = self.onclick.as_ref()
-            .as_ref().map(|c| c.as_ref().unchecked_ref());
-        self.node_ref.get().expect("cannot get node_ref")
-            .set_onclick(onclick);
+impl ElementHtmlType {
+    pub fn get_type(&self) -> &'static str {
+        match self {
+            Self::H1 => "h1",
+            Self::P => "p",
+        }
+    }
+    pub fn from_str(html_type: &str) -> Self {
+        match html_type {
+            "h1" => Self::H1,
+            "p" => Self::P,
+            _ => Self::P,
+        }
     }
 }
-*/
-
-/*
-impl IntoRender for Note {
-    type Output = Vec<AnyView>;
-
-    fn into_render(self) -> Self::Output {
-        let dom_nodes_ = self.body.into_iter().map(DomNode::new).collect::<Vec<_>>();
-        let (dom_nodes, set_dom_nodes) = arc_signal(dom_nodes_);
-        //TODO: current node may not respond(reactive) to change,
-        //      so check whether effect runs with change of dom_nodes' contents.
-
-        Effect::new(move || {
-            set_dom_nodes.update(|nodes| {
-                let mut prev_node: Option<&mut DomNode> = None;
-
-                for node in nodes.iter_mut() {
-                    if let Some(prev_node) = prev_node {
-                        let onclick: Closure<dyn FnMut()> = {
-                            let node_ref = node.node_ref.clone();
-                            Closure::new(move || {
-                                if let Some(node) = node_ref.get() {
-                                    let value = node.inner_text();
-                                    log!("value under this element: {}", value);
-                                } else {
-                                    log!("Failed to get node_ref");
-                                }
-                            })
-                        };
-
-                        prev_node.set_onclick(onclick);
-                    }
-                    prev_node = Some(node);
-                }
-            });
-        });
-
-        dom_nodes.get()
-            .into_iter()
-            .map(IntoRender::into_render)
-            .collect_view()
-    }
-}
-*/
-
-

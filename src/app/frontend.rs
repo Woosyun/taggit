@@ -1,7 +1,7 @@
 use leptos::prelude::*;
 use leptos_meta::{provide_meta_context, MetaTags, Stylesheet, Title};
 use leptos_router::{
-    components::{Route, Router, Routes, ProtectedRoute},
+    components::{Route, Router, Routes},
     StaticSegment,
     path,
 };
@@ -65,14 +65,6 @@ pub fn Frontend() -> impl IntoView {
                     <Route path=path!("/") view=search::Page />
                     <Route path=StaticSegment("/register") view=auth::RegisterPage />
                     <Route path=StaticSegment("/login") view=auth::LoginPage />
-                    <Route path=path!("/text/view") view=text::view::Page />
-                    <ProtectedRoute 
-                        condition=move || authenticated.get().map(|re| re.is_ok())
-                        path=path!("/text/edit")
-                        redirect_path=move || "/"
-                        view=text::edit::Page
-                    />
-                    <Route path=path!("/note") view=note::Page />
                 </Routes>
             </main>
         </Router>

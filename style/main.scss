@@ -53,7 +53,7 @@ button:hover {
     color: red;
     cursor: pointer;
 }
-
+/*
 .container {
     display: flex;
     flex-direction: column;
@@ -87,3 +87,21 @@ button:hover {
     border-radius: 5px;
     transition: background-color 0.3s, color 0.3s;
 }
+*/
+.note {
+    display: flex;
+    flex-direction: column;
+    width: 90dvw;
+    margin: 0 auto;
+    height: 95dvh;
+    gap: 0.5rem;
+}
+.note > div {
+    display: inline;
+    //min-height: 1.5rem;
+    white-space: pre-line;
+}
+.note > div > br {
+  display: none;
+}
+

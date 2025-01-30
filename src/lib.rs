@@ -1,7 +1,6 @@
 pub mod app;
 pub mod user;
-pub mod text;
-pub mod note;
+pub mod mail;
 
 use cfg_if::cfg_if;
 cfg_if! {
